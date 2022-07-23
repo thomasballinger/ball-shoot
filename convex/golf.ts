@@ -64,7 +64,8 @@ export const publishStroke = mutation(
     dy *= mightiness;
 
     const { x, y } = currentPosition(ball);
-    const newBall = { ...ball, x, y, dx, dy, ts: Date.now() + 100 };
+    const DELAY = 0;
+    const newBall = { ...ball, x, y, dx, dy, ts: Date.now() + DELAY };
 
     db.replace(ball._id, newBall);
   }
