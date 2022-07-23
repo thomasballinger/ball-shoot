@@ -44,7 +44,7 @@ export const Game = () => {
     const ballPos = currentPosition(ball);
     const dx = mousePos.x - ballPos.x;
     const dy = yMax - mousePos.y + yMin - ballPos.y;
-    const mightiness = Math.sqrt(dx * dx + dy * dy) / 10;
+    const mightiness = Math.sqrt(dx * dx + dy * dy) / 20;
     const angleInDegrees = (Math.atan(dx / dy) * 180) / Math.PI;
     publish(identifier.current, angleInDegrees, mightiness);
   };
