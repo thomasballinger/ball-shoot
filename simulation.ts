@@ -47,7 +47,7 @@ export function currentPosition(ball: Ball): { x: number; y: number } {
   let i = 0;
   // infinite loops are annoying
   while (i++ < 1000) {
-    newBall = step(newBall, 10);record
+    newBall = step(newBall, 10);
 
     // out of bounds, return to start
     if (newBall.x < xMin || newBall.x > xMax) {

@@ -1,7 +1,7 @@
-import { Id } from "convex/values";
 import { Ball, degreesToVector, currentPosition } from "../simulation";
 import { query, mutation } from "./_generated/server";
 import {instance} from "../hello-wasm/tmp.mjs";
+import {Id} from "./_generated/dataModel";
 console.log(instance.exports.add)
 
 export const getBalls = query(async ({ db }) => {
@@ -15,7 +15,7 @@ export const getBalls = query(async ({ db }) => {
   });
 });
 
-export const createBall = mutation(({ db }, identifier, color): Id => {
+export const createBall = mutation(({ db }, identifier, color): Id<"balls"> => {
   return db.insert("balls", {
     x: 10 + Math.random() * 200,
     y: 10 + Math.random() * 200,
@@ -28,9 +28,11 @@ export const createBall = mutation(({ db }, identifier, color): Id => {
 });
 
 export const getBall = query(
-  async ({ db }, id: Id | null): Promise<Ball | null> => {
+  async ({ db }, id: Id<"balls"> | null): Promise<Ball | null> => {
     if (!id) return null;
-    const { identifier, ...rest } = await db.get(id);
+    const ball = await db.get(id);
+    if (!ball) return ball;
+    const { identifier, ...rest } = ball;
     return rest;
   }
 );
