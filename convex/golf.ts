@@ -1,9 +1,13 @@
 import { Id } from "convex/values";
 import { Ball, degreesToVector, currentPosition } from "../simulation";
 import { query, mutation } from "./_generated/server";
+import {instance} from "../hello-wasm/tmp.mjs";
+console.log(instance.exports.add)
 
 export const getBalls = query(async ({ db }) => {
   const balls = await db.table("balls").collect();
+  console.log(instance.exports.add)
+  console.log(instance.exports.add(1, 2));
   return balls.map((b) => {
     // strip out identifiers because these are secret
     const { identifier, ...rest } = b;
