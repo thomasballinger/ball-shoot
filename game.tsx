@@ -1,4 +1,4 @@
-import { Id } from "convex/values";
+import { Id } from "./convex/_generated/dataModel";
 import React, { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "./convex/_generated/react";
 import { Ball, currentPosition, xMax, xMin, yMax, yMin } from "./simulation";
@@ -35,7 +35,7 @@ export const Game = () => {
     init();
   }, []);
 
-  const [myBallId, setMyBallId] = useState<Id | null>(null);
+  const [myBallId, setMyBallId] = useState<Id<'balls'> | null>(null);
   const [ballPos, setBallPos] = useState<{x: number, y: number}>();
   const ball = useQuery("golf:getBall", myBallId) || null;
   //const ballPos = ball ? currentPosition(ball) : undefined;
