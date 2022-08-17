@@ -8,7 +8,7 @@ let wasm;
 */
 export function add(a, b) {
     const ret = wasm.add(a, b);
-    return ret >>> 0;
+    return ret;
 }
 
 async function load(module, imports) {

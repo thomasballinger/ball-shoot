@@ -1,3 +1,10 @@
+import {instance} from "./hello-wasm/tmp.mjs";
+import {Id} from "./convex/_generated/dataModel";
+
+const add = instance.exports.add as (a: number, b: number) => number;
+//(window as any).instance = instance;
+const memory = instance.exports.memory as unknown as ArrayBuffer;
+
 export const [xMin, xMax, yMin, yMax] = [0, 1000, 0, 500];
 
 export type Ball = {
@@ -12,16 +19,17 @@ export type Ball = {
 function step(ball: Ball, dt: number): Ball {
   let { x, y, dx, dy, ts } = ball;
 
-  if (x < xMin || x > xMax) {
-    ball.x = Math.min(xMax, Math.max(xMin, x));
-    return ball;
+  if (x < xMin) {
+    x = xMax + x;
+  } else if (x > xMax) {
+    x = x - xMax;
   }
 
   ts = ts + dt;
   dx = 0.99 * dx;
   dy = 0.99 * dy - 0.05;
-  x = x + dx;
-  y = y + dy;
+  x = add(x, dx);
+  y = add(y, dy);
 
   // bounce
   if (y < yMin) {
@@ -49,11 +57,6 @@ export function currentPosition(ball: Ball): { x: number; y: number } {
   while (i++ < 1000) {
     newBall = step(newBall, 10);
 
-    // out of bounds, return to start
-    if (newBall.x < xMin || newBall.x > xMax) {
-      return ball;
-    }
-
     if (
       newBall.y < 1 &&
       Math.abs(newBall.dy * newBall.dy + newBall.dx * newBall.dx) < 1
@@ -72,6 +75,6 @@ export function currentPosition(ball: Ball): { x: number; y: number } {
 }
 
 export const degreesToVector = (deg: number) => [
-  Math.sin((deg * 2 * Math.PI) / 360),
   Math.cos((deg * 2 * Math.PI) / 360),
+  Math.sin((deg * 2 * Math.PI) / 360),
 ];

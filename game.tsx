@@ -36,8 +36,25 @@ export const Game = () => {
   }, []);
 
   const [myBallId, setMyBallId] = useState<Id | null>(null);
+  const [ballPos, setBallPos] = useState<{x: number, y: number}>();
   const ball = useQuery("golf:getBall", myBallId) || null;
-  const ballPos = ball ? currentPosition(ball) : undefined;
+  //const ballPos = ball ? currentPosition(ball) : undefined;
+  useEffect(() => {
+    const handle = requestAnimationFrame(() => {
+      setBallPos(ball ? currentPosition(ball) : undefined);
+    });
+    return () => cancelAnimationFrame(handle);
+  })
+
+  const publish = useMutation("golf:publishStroke");
+
+  if (mousePos && ball) {
+    const ballPos = currentPosition(ball);
+    const dx = mousePos.x - ballPos.x;
+    const dy = yMax - mousePos.y + yMin - ballPos.y;
+    const mightiness = Math.sqrt(dx * dx + dy * dy) / 20;
+    const angleInDegrees = (Math.atan2(dy, dx) * 180) / Math.PI;
+  }
 
   const fire = () => {
     if (!mousePos || !ball) return;
@@ -45,11 +62,14 @@ export const Game = () => {
     const dx = mousePos.x - ballPos.x;
     const dy = yMax - mousePos.y + yMin - ballPos.y;
     const mightiness = Math.sqrt(dx * dx + dy * dy) / 20;
-    const angleInDegrees = (Math.atan(dx / dy) * 180) / Math.PI;
+    const angleInDegrees = (Math.atan2(dy, dx) * 180) / Math.PI;
+
+    if (mightiness > 20) {
+      return;
+    }
+
     publish(identifier.current, angleInDegrees, mightiness);
   };
-  const publish = useMutation("golf:publishStroke");
-
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       <svg
@@ -62,7 +82,9 @@ export const Game = () => {
         onTouchEnd={fire}
       >
         <Balls />
+
         <Controls mousePos={mousePos} ballPos={ballPos} />
+
       </svg>
     </div>
   );
@@ -108,9 +130,16 @@ const Controls = ({
   ballPos: { x: number; y: number } | undefined;
 }) => {
   if (!ballPos || !mousePos) return null;
+  const x1 = ballPos.x
+  const y1 = yMax - ballPos.y + yMin;
+  const x2 = mousePos.x;
+  const y2 = mousePos.y;
+  const tooFar = dist(x1, y1, x2, y2) / 20 > 20;
+  const color = tooFar ? "red" : "black";
   return (
     <line
-      stroke="black"
+      stroke={color}
+      strokeWidth={tooFar ? 1 : 3}
       x1={ballPos.x}
       y1={yMax - ballPos.y + yMin}
       x2={mousePos.x}
@@ -118,3 +147,5 @@ const Controls = ({
     />
   );
 };
+
+const dist = (x1: number, y1: number, x2: number, y2: number) => Math.sqrt((x2 - x1)**2 + (y2 - y1)**2);
