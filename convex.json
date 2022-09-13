@@ -1,6 +1,6 @@
 {
-  "authInfo": [],
-  "functions": "convex/",
-  "instanceName": "guiltless-dog-960",
-  "origin": "https://guiltless-dog-960.convex.cloud"
+  "prodUrl": "http://localhost:8000",
+  "project": "carnitas",
+  "team": "carnitas",
+  "functions": "convex/"
 }

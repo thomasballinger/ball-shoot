@@ -1,94 +1,53 @@
-import { Id } from "./convex/_generated/dataModel";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useMutation, useQuery } from "./convex/_generated/react";
-import { Ball, currentPosition, xMax, xMin, yMax, yMin } from "./simulation";
+import { currentPosition, yMax, yMin, xMax, xMin } from "./simulation";
+import {useGameplay} from "./useGameplay";
+
 
 export const Game = () => {
-  const [mousePos, setMousePos] = useState<
-    { x: number; y: number } | undefined
-  >();
-  function onMouseOrTouchMove(e: React.MouseEvent | React.TouchEvent) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    if ("touches" in e) {
-      setMousePos({
-        x: e.touches[0].clientX - rect.left,
-        y: e.touches[0].clientY - rect.top,
-      });
-    } else {
-      setMousePos({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      });
-    }
-  }
-
-  const createBall = useMutation("golf:createBall");
-  const identifier = useRef<string>("user" + Math.random());
-  const color = useRef<string>(
-    `hsl(${Math.floor(Math.random() * 360)}, 100%, 50%)`
-  );
-  useEffect(() => {
-    async function init() {
-      const id = await createBall(identifier.current, color.current);
-      setMyBallId(id);
-    }
-    init();
-  }, []);
-
-  const [myBallId, setMyBallId] = useState<Id<'balls'> | null>(null);
-  const [ballPos, setBallPos] = useState<{x: number, y: number}>();
-  const ball = useQuery("golf:getBall", myBallId) || null;
-  //const ballPos = ball ? currentPosition(ball) : undefined;
-  useEffect(() => {
-    const handle = requestAnimationFrame(() => {
-      setBallPos(ball ? currentPosition(ball) : undefined);
-    });
-    return () => cancelAnimationFrame(handle);
-  })
-
-  const publish = useMutation("golf:publishStroke");
-
-  if (mousePos && ball) {
-    const ballPos = currentPosition(ball);
-    const dx = mousePos.x - ballPos.x;
-    const dy = yMax - mousePos.y + yMin - ballPos.y;
-    const mightiness = Math.sqrt(dx * dx + dy * dy) / 20;
-    const angleInDegrees = (Math.atan2(dy, dx) * 180) / Math.PI;
-  }
-
-  const fire = () => {
-    if (!mousePos || !ball) return;
-    const ballPos = currentPosition(ball);
-    const dx = mousePos.x - ballPos.x;
-    const dy = yMax - mousePos.y + yMin - ballPos.y;
-    const mightiness = Math.sqrt(dx * dx + dy * dy) / 20;
-    const angleInDegrees = (Math.atan2(dy, dx) * 180) / Math.PI;
-
-    if (mightiness > 20) {
-      return;
-    }
-
-    publish(identifier.current, angleInDegrees, mightiness);
-  };
+  const { onMouseOrTouchMove, fire, mousePos, ballPos } = useGameplay();
+  const width = 1000;
+  const height = 500;
+  const newLevel = useMutation("golf:createLevel");
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       <svg
-        style={{ width: 1000, height: 500 }}
-        viewBox={`${xMin} ${yMin} ${xMax - xMin} ${yMax - yMin}`}
+        style={{ width, height }}
+        viewBox={`${xMin - 50} ${yMin - 50} ${xMax - xMin + 100} ${yMax - yMin + 100}`}
         xmlns="<http://www.w3.org/2000/svg>"
         onMouseMove={onMouseOrTouchMove}
         onTouchMove={onMouseOrTouchMove}
         onMouseUp={fire}
         onTouchEnd={fire}
       >
+        <Ground />
         <Balls />
-
         <Controls mousePos={mousePos} ballPos={ballPos} />
-
       </svg>
+      <button onClick={() => newLevel()}>new level</button>
     </div>
   );
 };
+
+export const Ground = () => {
+  const level = useQuery("golf:getLevel");
+  if (!level) return <></>
+  const lines = level.domain.slice(0, -1).map((x1, i) => {
+    const x2 = level.domain[i+1];
+    const y1 = level.elevation[i];
+    const y2 = level.elevation[i+1];
+    return <line
+      key={'ground'+i}
+      stroke={"green"}
+      strokeWidth={1}
+      x1={x1}
+      y1={yMax - y1 + yMin}
+      x2={x2}
+      y2={yMax - y2 + yMin}
+    />
+  });
+  return <>{lines}</>
+}
 
 // memoize to prevent rerenders on parent rerenders
 export const Balls = React.memo(() => {
@@ -109,6 +68,7 @@ export const Balls = React.memo(() => {
         const { x, y } = currentPosition(b);
         return (
           <circle
+            key={b._id.toString()}
             cx={x}
             cy={yMax - y}
             r="8"
@@ -122,7 +82,7 @@ export const Balls = React.memo(() => {
   );
 });
 
-const Controls = ({
+export const Controls = ({
   mousePos,
   ballPos,
 }: {

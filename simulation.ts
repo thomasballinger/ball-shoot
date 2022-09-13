@@ -1,11 +1,12 @@
 import {instance} from "./hello-wasm/tmp.mjs";
-import {Id} from "./convex/_generated/dataModel";
 
 const add = instance.exports.add as (a: number, b: number) => number;
 //(window as any).instance = instance;
 const memory = instance.exports.memory as unknown as ArrayBuffer;
 
 export const [xMin, xMax, yMin, yMax] = [0, 1000, 0, 500];
+const xExtent = xMax - xMin;
+const yExtent = yMax - yMin;
 
 export type Ball = {
   x: number;
@@ -15,6 +16,21 @@ export type Ball = {
   ts: number;
   color: string;
 };
+
+export type Level = {
+  domain: number[],
+  elevation: number[],
+  created: number,
+}
+
+export function genLevel(){
+  return {
+    elevation: [...Array(20).keys()].map(() => yMin + yExtent * Math.random()),
+    domain: [...Array(20).keys()].map(() => xMin + xExtent * Math.random()).sort((a, b) => a - b)
+  }
+}
+
+
 
 function step(ball: Ball, dt: number): Ball {
   let { x, y, dx, dy, ts } = ball;
@@ -26,15 +42,15 @@ function step(ball: Ball, dt: number): Ball {
   }
 
   ts = ts + dt;
-  dx = 0.99 * dx;
-  dy = 0.99 * dy - 0.05;
+  dx = 0.995 * dx;
+  dy = 0.995 * dy - 0.08;
   x = add(x, dx);
   y = add(y, dy);
 
   // bounce
   if (y < yMin) {
     y = yMin + (yMin - y);
-    dy = -dy * 0.7;
+    dy = -dy * 0.75;
   }
 
   return { ...ball, x, y, dx, dy, ts };
@@ -42,17 +58,11 @@ function step(ball: Ball, dt: number): Ball {
 
 export function currentPosition(ball: Ball): { x: number; y: number } {
   const now = Date.now();
-
-  /*
-  // last moved more than ten seconds ago");
-  if (ball.ts < now - 10000) return ball;
-  */
-
-  // in the future (?), don't touch it
   if (ball.ts > now) return ball;
 
   let newBall = ball;
   let i = 0;
+
   // infinite loops are annoying
   while (i++ < 1000) {
     newBall = step(newBall, 10);
