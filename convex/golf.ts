@@ -17,9 +17,8 @@ export const getBalls = query(async ({ db }) => {
   });
 });
 
-async function currentLevel({db} : {db: DatabaseReader}): Promise<Document<"levels"> | null> {
-  const results = await db.table("levels").index("by_level_start_time").range(q => q.gt("started", 0)).collect();
-  return results[results.length - 1] || null;
+function currentLevel({db} : {db: DatabaseReader}): Promise<Document<"levels"> | null> {
+  return db.table("levels").index("by_level_start_time").range(q => q.gt("started", 0)).order('desc').first();
 }
 
 // The minimum amount of time before a new level can be created

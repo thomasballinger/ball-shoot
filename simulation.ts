@@ -20,16 +20,26 @@ export type Ball = {
 export type Level = {
   domain: number[],
   elevation: number[],
-  created: number,
 }
 
 export function genLevel(){
   return {
     elevation: [...Array(20).keys()].map(() => yMin + yExtent * Math.random()),
-    domain: [...Array(20).keys()].map(() => xMin + xExtent * Math.random()).sort((a, b) => a - b)
+    domain: [0].concat([...Array(19).keys()].map(() => xMin + xExtent * Math.random()).sort((a, b) => a - b))
   }
 }
 
+export function groundLines(level: Level) {
+  const lines = level.domain.slice(0, -1).map((x1, i) => {
+    const x2 = level.domain[i+1];
+    const y1 = level.elevation[i];
+    const y2 = level.elevation[i+1];
+    return {x1, x2, y1, y2};
+  });
+  const last = lines[lines.length - 1];
+  lines.push({x1: last.x2, y1: last.y2, x2: xMax, y2: lines[0].y1});
+  return lines;
+};
 
 
 function step(ball: Ball, dt: number): Ball {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useMutation, useQuery } from "./convex/_generated/react";
-import { currentPosition, yMax, yMin, xMax, xMin } from "./simulation";
+import { currentPosition, yMax, yMin, xMax, xMin, groundLines } from "./simulation";
 import {useGameplay} from "./useGameplay";
 
 
@@ -32,11 +32,7 @@ export const Game = () => {
 export const Ground = () => {
   const level = useQuery("golf:getLevel");
   if (!level) return <></>
-  const lines = level.domain.slice(0, -1).map((x1, i) => {
-    const x2 = level.domain[i+1];
-    const y1 = level.elevation[i];
-    const y2 = level.elevation[i+1];
-    return <line
+  const lines = groundLines(level).map(({x1, y1, x2, y2}, i) => <line
       key={'ground'+i}
       stroke={"green"}
       strokeWidth={1}
@@ -45,7 +41,7 @@ export const Ground = () => {
       x2={x2}
       y2={yMax - y2 + yMin}
     />
-  });
+  );
   return <>{lines}</>
 }
 
