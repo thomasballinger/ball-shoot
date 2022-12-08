@@ -1,8 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useMutation, useQuery } from "./convex/_generated/react";
-import { currentPosition, yMax, yMin, xMax, xMin, groundLines } from "./simulation";
-import {useGameplay} from "./useGameplay";
-
+import {
+  currentPosition,
+  yMax,
+  yMin,
+  xMax,
+  xMin,
+  groundLines,
+} from "./simulation";
+import { useGameplay } from "./useGameplay";
 
 export const Game = () => {
   const { onMouseOrTouchMove, fire, mousePos, ballPos } = useGameplay();
@@ -13,7 +19,9 @@ export const Game = () => {
     <div style={{ display: "flex", flexDirection: "column" }}>
       <svg
         style={{ width, height }}
-        viewBox={`${xMin - 50} ${yMin - 50} ${xMax - xMin + 100} ${yMax - yMin + 100}`}
+        viewBox={`${xMin - 50} ${yMin - 50} ${xMax - xMin + 100} ${
+          yMax - yMin + 100
+        }`}
         xmlns="<http://www.w3.org/2000/svg>"
         onMouseMove={onMouseOrTouchMove}
         onTouchMove={onMouseOrTouchMove}
@@ -31,9 +39,10 @@ export const Game = () => {
 
 export const Ground = () => {
   const level = useQuery("golf:getLevel");
-  if (!level) return <></>
-  const lines = groundLines(level).map(({x1, y1, x2, y2}, i) => <line
-      key={'ground'+i}
+  if (!level) return <></>;
+  const lines = groundLines(level).map(({ x1, y1, x2, y2 }, i) => (
+    <line
+      key={"ground" + i}
       stroke={"green"}
       strokeWidth={1}
       x1={x1}
@@ -41,9 +50,9 @@ export const Ground = () => {
       x2={x2}
       y2={yMax - y2 + yMin}
     />
-  );
-  return <>{lines}</>
-}
+  ));
+  return <>{lines}</>;
+};
 
 // memoize to prevent rerenders on parent rerenders
 export const Balls = React.memo(() => {
@@ -58,10 +67,12 @@ export const Balls = React.memo(() => {
     update();
   }, []);
 
+  const now = Date.now();
+
   return (
     <>
       {balls.map((b) => {
-        const { x, y } = currentPosition(b);
+        const { x, y } = currentPosition(b, now);
         return (
           <circle
             key={b._id.toString()}
@@ -86,7 +97,7 @@ export const Controls = ({
   ballPos: { x: number; y: number } | undefined;
 }) => {
   if (!ballPos || !mousePos) return null;
-  const x1 = ballPos.x
+  const x1 = ballPos.x;
   const y1 = yMax - ballPos.y + yMin;
   const x2 = mousePos.x;
   const y2 = mousePos.y;
@@ -104,4 +115,5 @@ export const Controls = ({
   );
 };
 
-const dist = (x1: number, y1: number, x2: number, y2: number) => Math.sqrt((x2 - x1)**2 + (y2 - y1)**2);
+const dist = (x1: number, y1: number, x2: number, y2: number) =>
+  Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);

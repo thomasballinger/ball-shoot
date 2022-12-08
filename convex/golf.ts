@@ -1,12 +1,20 @@
-import { Ball, degreesToVector, currentPosition, genLevel } from "../simulation";
+import {
+  Ball,
+  degreesToVector,
+  currentPosition,
+  genLevel,
+} from "../simulation";
 import { query, mutation, DatabaseReader } from "./_generated/server";
-import {Document, Id} from "./_generated/dataModel";
+import { Document, Id } from "./_generated/dataModel";
 
 export const getBalls = query(async ({ db }) => {
-  const curLevel = await currentLevel({db});
+  const curLevel = await currentLevel({ db });
   if (curLevel === null) return [];
 
-  const balls = await db.query("balls").withIndex("by_level", q => q.eq("level", curLevel._id)).collect();
+  const balls = await db
+    .query("balls")
+    .withIndex("by_level", (q) => q.eq("level", curLevel._id))
+    .collect();
   return balls.map((b) => {
     // strip out identifiers because these are secret
     const { identifier, ...rest } = b;
@@ -14,51 +22,63 @@ export const getBalls = query(async ({ db }) => {
   });
 });
 
-function currentLevel({db} : {db: DatabaseReader}): Promise<Document<"levels"> | null> {
-  return db.query("levels").withIndex("by_level_start_time", q => q.gt("started", 0)).order('desc').first();
+function currentLevel({
+  db,
+}: {
+  db: DatabaseReader;
+}): Promise<Document<"levels"> | null> {
+  return db
+    .query("levels")
+    .withIndex("by_level_start_time", (q) => q.gt("started", 0))
+    .order("desc")
+    .first();
 }
 
 // The minimum amount of time before a new level can be created
 const ROUND_LENGTH = 10000;
 
-export const createLevel = mutation(async ({ db }): Promise<Document<"levels"> | null> => {
-  const curLevel = await currentLevel({db});
-  if (curLevel) {
-    const ago = Date.now() - curLevel.started;
-    if (ago < ROUND_LENGTH) {
-      return null;
+export const createLevel = mutation(
+  async ({ db }): Promise<Document<"levels"> | null> => {
+    const curLevel = await currentLevel({ db });
+    if (curLevel) {
+      const ago = Date.now() - curLevel.started;
+      if (ago < ROUND_LENGTH) {
+        return null;
+      }
     }
+    const id = await db.insert("levels", {
+      started: Date.now(),
+      ...genLevel(),
+    });
+    const val = (await db.get(id))!;
+    return val;
   }
-  const id = await db.insert("levels", {
-    started: Date.now(),
-    ...genLevel()
-  });
-  const val = (await db.get(id))!;
-  return val;
-});
+);
 
-export const createBall = mutation(async (ctx, identifier, color): Promise<Id<"balls">> => {
-  const {db} = ctx;
-  // fails if there's no level? ick, what do we do here?
-  let curLevel = await currentLevel(ctx);
-  if (curLevel === null) {
-    curLevel = await createLevel(ctx);
+export const createBall = mutation(
+  async (ctx, identifier, color): Promise<Id<"balls">> => {
+    const { db } = ctx;
+    // fails if there's no level? ick, what do we do here?
+    let curLevel = await currentLevel(ctx);
+    if (curLevel === null) {
+      curLevel = await createLevel(ctx);
+    }
+    if (!curLevel) {
+      return null as any;
+      throw new Error("can't find level but can't create new level");
+    }
+    return db.insert("balls", {
+      x: 10 + Math.random() * 200,
+      y: 10 + Math.random() * 200,
+      dx: 0,
+      dy: 0,
+      ts: Date.now(),
+      color,
+      identifier,
+      level: curLevel?._id,
+    });
   }
-  if (!curLevel) {
-    return null as any;
-    throw new Error("can't find level but can't create new level");
-  }
-  return db.insert("balls", {
-    x: 10 + Math.random() * 200,
-    y: 10 + Math.random() * 200,
-    dx: 0,
-    dy: 0,
-    ts: Date.now(),
-    color,
-    identifier,
-    level: curLevel?._id
-  });
-});
+);
 
 export const getBall = query(
   async ({ db }, id: Id<"balls"> | null): Promise<Ball | null> => {
@@ -70,11 +90,9 @@ export const getBall = query(
   }
 );
 
-export const getLevel = query(
-  ({ db }): Promise<Document<"levels"> | null> => {
-    return currentLevel({db});
-  }
-);
+export const getLevel = query(({ db }): Promise<Document<"levels"> | null> => {
+  return currentLevel({ db });
+});
 
 export const publishStroke = mutation(
   async (
@@ -90,14 +108,15 @@ export const publishStroke = mutation(
     ) {
       throw new Error("bad arg types");
     }
-    const ball = await db.query("balls").filter(q => q.eq(q.field('identifier'), identifier)).unique();
+    const ball = await db
+      .query("balls")
+      .filter((q) => q.eq(q.field("identifier"), identifier))
+      .unique();
     if (!ball) {
       throw new Error("Can't find that ball!");
     }
     if (angleInDegrees < -180 || angleInDegrees > 180) {
-      throw new Error(
-        "Hey it's in degrees, -180 to 180, unit circle style."
-      );
+      throw new Error("Hey it's in degrees, -180 to 180, unit circle style.");
     }
     if (mightiness < 0 || mightiness > 20) {
       throw new Error("You can't hit the ball that hard!");
@@ -107,7 +126,8 @@ export const publishStroke = mutation(
     dx *= mightiness;
     dy *= mightiness;
 
-    const { x, y } = currentPosition(ball);
+    const now = Date.now();
+    const { x, y } = currentPosition(ball, now);
     const DELAY = 0;
     const newBall = { ...ball, x, y, dx, dy, ts: Date.now() + DELAY };
 

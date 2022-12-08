@@ -4,14 +4,15 @@ import { useMutation, useQuery } from "./convex/_generated/react";
 import { currentPosition, xMax, xMin, yMax, yMin } from "./simulation";
 
 export function useGameplay(): {
-  onMouseOrTouchMove: (e: React.MouseEvent<SVGSVGElement> | React.TouchEvent<SVGSVGElement>) => void;
+  onMouseOrTouchMove: (
+    e: React.MouseEvent<SVGSVGElement> | React.TouchEvent<SVGSVGElement>
+  ) => void;
   fire: () => any;
-  ballPos: { x: number; y: number; } | undefined;
-  mousePos: { x: number; y: number; } | undefined;
+  ballPos: { x: number; y: number } | undefined;
+  mousePos: { x: number; y: number } | undefined;
 } {
-
   const [mousePos, setMousePos] = useState<
-    { x: number; y: number; } | undefined
+    { x: number; y: number } | undefined
   >();
 
   const createBall = useMutation("golf:createBall");
@@ -27,23 +28,30 @@ export function useGameplay(): {
     init();
   }, []);
 
-  function onMouseOrTouchMove(e: React.MouseEvent<SVGSVGElement> | React.TouchEvent<SVGSVGElement>) {
-    const [screenX, screenY] = ("touches" in e) ?
-      [e.touches[0].clientX, e.touches[0].clientY] :
-      [e.clientX, e.clientY];
+  function onMouseOrTouchMove(
+    e: React.MouseEvent<SVGSVGElement> | React.TouchEvent<SVGSVGElement>
+  ) {
+    const [screenX, screenY] =
+      "touches" in e
+        ? [e.touches[0].clientX, e.touches[0].clientY]
+        : [e.clientX, e.clientY];
     const domPoint = new DOMPointReadOnly(screenX, screenY);
     const svg = e.currentTarget;
-    const { x, y } = domPoint.matrixTransform((svg.getScreenCTM() as any).inverse() as DOMMatrixInit);
+    const { x, y } = domPoint.matrixTransform(
+      (svg.getScreenCTM() as any).inverse() as DOMMatrixInit
+    );
     setMousePos({ x, y });
   }
 
-  const [myBallId, setMyBallId] = useState<Id<'balls'> | null>(null);
-  const [ballPos, setBallPos] = useState<{ x: number; y: number; }>();
+  const [myBallId, setMyBallId] = useState<Id<"balls"> | null>(null);
+  const [ballPos, setBallPos] = useState<{ x: number; y: number }>();
   const ball = useQuery("golf:getBall", myBallId) || null;
-  //const ballPos = ball ? currentPosition(ball) : undefined;
+  //const now = Date.now();
+  //const ballPos = ball ? currentPosition(ball, now) : undefined;
   useEffect(() => {
     const handle = requestAnimationFrame(() => {
-      setBallPos(ball ? currentPosition(ball) : undefined);
+      const now = Date.now();
+      setBallPos(ball ? currentPosition(ball, now) : undefined);
     });
     return () => cancelAnimationFrame(handle);
   });
@@ -51,9 +59,9 @@ export function useGameplay(): {
   const publish = useMutation("golf:publishStroke");
 
   const fire = () => {
-    if (!mousePos || !ball)
-      return;
-    const ballPos = currentPosition(ball);
+    if (!mousePos || !ball) return;
+    const now = Date.now();
+    const ballPos = currentPosition(ball, now);
     const dx = mousePos.x - ballPos.x;
     const dy = yMax - mousePos.y + yMin - ballPos.y;
     const mightiness = Math.sqrt(dx * dx + dy * dy) / 20;
