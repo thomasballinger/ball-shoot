@@ -1,8 +1,3 @@
-import {instance} from "./hello-wasm/tmp.mjs";
-
-const add = instance.exports.add as (a: number, b: number) => number;
-//(window as any).instance = instance;
-const memory = instance.exports.memory as unknown as ArrayBuffer;
 
 export const [xMin, xMax, yMin, yMax] = [0, 1000, 0, 500];
 const xExtent = xMax - xMin;
@@ -54,8 +49,8 @@ function step(ball: Ball, dt: number): Ball {
   ts = ts + dt;
   dx = 0.995 * dx;
   dy = 0.995 * dy - 0.08;
-  x = add(x, dx);
-  y = add(y, dy);
+  x = x + dx;
+  y = y + dy;
 
   // bounce
   if (y < yMin) {

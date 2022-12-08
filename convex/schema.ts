@@ -1,4 +1,10 @@
 import { defineSchema, defineTable, s } from "convex/schema";
+import {Document} from "./_generated/dataModel";
+
+// the Ball type used in client code doesn't have an identifier
+export type Ball = Omit<Document<"balls">, "identifier">;
+
+export type Level = Document<"levels">;
 
 export default defineSchema({
   balls: defineTable({

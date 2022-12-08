@@ -1,6 +1,7 @@
 {
-  "prodUrl": "http://localhost:8000",
-  "project": "carnitas",
-  "team": "carnitas",
-  "functions": "convex/"
+  "project": "golf",
+  "team": "thomasballinger",
+  "prodUrl": "https://guiltless-dog-960.convex.cloud",
+  "functions": "convex/",
+  "authInfo": []
 }

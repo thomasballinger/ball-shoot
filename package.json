@@ -6,7 +6,7 @@
     "start": "next start"
   },
   "dependencies": {
-    "convex": "^0.1.10",
+    "convex": "^0.2.0",
     "next": "latest",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

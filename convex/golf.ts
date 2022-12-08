@@ -1,15 +1,12 @@
 import { Ball, degreesToVector, currentPosition, genLevel } from "../simulation";
 import { query, mutation, DatabaseReader } from "./_generated/server";
-import {instance} from "../hello-wasm/tmp.mjs";
 import {Document, Id} from "./_generated/dataModel";
-
-const add = instance.exports.add as (a: number, b: number) => number;
 
 export const getBalls = query(async ({ db }) => {
   const curLevel = await currentLevel({db});
   if (curLevel === null) return [];
 
-  const balls = await db.table("balls").index("by_level").range(q => q.eq("level", curLevel._id)).collect();
+  const balls = await db.query("balls").withIndex("by_level", q => q.eq("level", curLevel._id)).collect();
   return balls.map((b) => {
     // strip out identifiers because these are secret
     const { identifier, ...rest } = b;
@@ -18,7 +15,7 @@ export const getBalls = query(async ({ db }) => {
 });
 
 function currentLevel({db} : {db: DatabaseReader}): Promise<Document<"levels"> | null> {
-  return db.table("levels").index("by_level_start_time").range(q => q.gt("started", 0)).order('desc').first();
+  return db.query("levels").withIndex("by_level_start_time", q => q.gt("started", 0)).order('desc').first();
 }
 
 // The minimum amount of time before a new level can be created
@@ -32,7 +29,7 @@ export const createLevel = mutation(async ({ db }): Promise<Document<"levels"> |
       return null;
     }
   }
-  const id = db.insert("levels", {
+  const id = await db.insert("levels", {
     started: Date.now(),
     ...genLevel()
   });
@@ -52,7 +49,7 @@ export const createBall = mutation(async (ctx, identifier, color): Promise<Id<"b
     throw new Error("can't find level but can't create new level");
   }
   return db.insert("balls", {
-    x: add(10, Math.random() * 200),
+    x: 10 + Math.random() * 200,
     y: 10 + Math.random() * 200,
     dx: 0,
     dy: 0,
@@ -93,7 +90,7 @@ export const publishStroke = mutation(
     ) {
       throw new Error("bad arg types");
     }
-    const ball = await db.table("balls").filter(q => q.eq(q.field('identifier'), identifier)).unique();
+    const ball = await db.query("balls").filter(q => q.eq(q.field('identifier'), identifier)).unique();
     if (!ball) {
       throw new Error("Can't find that ball!");
     }
