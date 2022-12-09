@@ -29,7 +29,6 @@ export const Game = () => {
     el: containerRef.current,
   });
   const newLevel = useMutation("golf:createLevel");
-  console.log(width, height);
   return (
     <>
       <p>strokes: {strokes}</p>

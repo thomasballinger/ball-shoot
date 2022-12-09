@@ -22,5 +22,6 @@ export default defineSchema({
     started: s.number(),
     elevation: s.array(s.number()),
     domain: s.array(s.number()),
+    hole: s.object({ x1: s.number(), x2: s.number() }),
   }).index("by_level_start_time", ["started"]),
 });

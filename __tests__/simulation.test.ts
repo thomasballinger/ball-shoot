@@ -45,6 +45,7 @@ describe("simulation", () => {
     const flatLevel = {
       domain: [xMin, xMax],
       elevation: [yMiddle, yMiddle],
+      hole: { x1: -1001, x2: -1000 },
     };
 
     const resting = currentPosition(createBall(0, yMax), 10000, flatLevel);
@@ -63,7 +64,6 @@ describe("simulation", () => {
       // console.log(cur.y);
       if (prev && JSON.stringify(prev) === JSON.stringify(cur)) {
         stable = true;
-        console.log("stable");
         break;
       }
       prev = cur;
@@ -79,6 +79,7 @@ describe("simulation helpers", () => {
     const flatLevel = {
       domain: [xMin, xMax],
       elevation: [yMiddle, yMiddle],
+      hole: { x1: -1001, x2: -1000 },
     };
     expect(
       getRelevantLand(
