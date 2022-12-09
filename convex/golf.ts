@@ -81,19 +81,18 @@ export const createBall = mutation(
       color,
       identifier,
       level: curLevel?._id,
+      strokes: 0,
     });
   }
 );
 
-export const getBall = query(
-  async ({ db }, id: Id<"balls"> | null): Promise<Ball | null> => {
-    if (!id) return null;
-    const ball = await db.get(id);
-    if (!ball) return ball;
-    const { identifier, ...rest } = ball;
-    return rest;
-  }
-);
+export const getBall = query(async ({ db }, id: Id<"balls"> | null) => {
+  if (!id) return null;
+  const ball = await db.get(id);
+  if (!ball) return ball;
+  const { identifier, ...rest } = ball;
+  return rest;
+});
 
 export const getLevel = query(({ db }): Promise<Document<"levels"> | null> => {
   return currentLevel({ db });
@@ -135,7 +134,15 @@ export const publishStroke = mutation(
     const now = Date.now();
     const { x, y } = currentPosition(ball, now, level || undefined);
     const DELAY = 0;
-    const newBall = { ...ball, x, y, dx, dy, ts: Date.now() + DELAY };
+    const newBall = {
+      ...ball,
+      x,
+      y,
+      dx,
+      dy,
+      ts: Date.now() + DELAY,
+      strokes: ball.strokes + 1,
+    };
 
     db.replace(ball._id, newBall);
   }

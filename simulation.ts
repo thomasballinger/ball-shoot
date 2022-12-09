@@ -1,5 +1,5 @@
-export const [xMin, xMax, yMin, yMax] = [0, 1000, 0, 500];
-export const radius = 10;
+export const [xMin, xMax, yMin, yMax] = [0, 1000, 0, 600];
+export const radius = 6;
 const xExtent = xMax - xMin;
 const yExtent = yMax - yMin;
 
@@ -24,7 +24,7 @@ export function genLevel() {
     const prev = elevations[elevations.length - 1];
     const elevation = Math.max(
       yMin,
-      Math.min(yMax, prev + ((Math.random() - 0.5) * yExtent) / 2)
+      Math.min(yMax / 2, prev + ((Math.random() - 0.5) * yExtent) / 2)
     );
     elevations.push(elevation);
   }

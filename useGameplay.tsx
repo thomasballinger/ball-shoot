@@ -10,6 +10,7 @@ export function useGameplay(): {
   fire: () => any;
   ballPos: { x: number; y: number } | undefined;
   mousePos: { x: number; y: number } | undefined;
+  strokes: number;
 } {
   const [mousePos, setMousePos] = useState<
     { x: number; y: number } | undefined
@@ -83,5 +84,6 @@ export function useGameplay(): {
     fire,
     ballPos,
     mousePos,
+    strokes: ball ? ball.strokes : 0,
   };
 }

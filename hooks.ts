@@ -1,29 +1,33 @@
 import { useState, useEffect } from "react";
 
-export function useWindowSize({
+export function useDimensions({
+  el,
   width,
   height,
 }: {
-  width: number;
-  height: number;
-}): {
+  el: HTMLElement | null;
   width?: number;
   height?: number;
+}): {
+  width: number;
+  height: number;
 } {
-  const [windowSize, setWindowSize] = useState({
-    width,
-    height,
+  const [dimensions, setDimensions] = useState({
+    width: width || 0,
+    height: height || 0,
   });
   useEffect(() => {
     function handleResize() {
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
+      if (el) {
+        setDimensions({
+          width: el.offsetWidth,
+          height: el.offsetHeight,
+        });
+      }
     }
     window.addEventListener("resize", handleResize);
     handleResize();
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
-  return windowSize;
+  }, [el]);
+  return dimensions;
 }

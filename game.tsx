@@ -4,9 +4,9 @@ declare global {
   }
 }
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "./convex/_generated/react";
-import { useWindowSize } from "./hooks";
+import { useDimensions } from "./hooks";
 import {
   currentPosition,
   yMax,
@@ -20,29 +20,35 @@ import {
 } from "./simulation";
 import { useGameplay } from "./useGameplay";
 
+// takes up the whole screen
 export const Game = () => {
-  const { onMouseOrTouchMove, fire, mousePos, ballPos } = useGameplay();
-  const { width, height } = useWindowSize({ width: 1000, height: 500 });
+  const { onMouseOrTouchMove, fire, mousePos, ballPos, strokes } =
+    useGameplay();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { width, height } = useDimensions({
+    el: containerRef.current,
+  });
   const newLevel = useMutation("golf:createLevel");
+  console.log(width, height);
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
-      <svg
-        style={{ width, height }}
-        viewBox={`${xMin - 50} ${yMin - 50} ${xMax - xMin + 100} ${
-          yMax - yMin + 100
-        }`}
-        xmlns="<http://www.w3.org/2000/svg>"
-        onMouseMove={onMouseOrTouchMove}
-        onTouchMove={onMouseOrTouchMove}
-        onMouseUp={fire}
-        onTouchEnd={fire}
-      >
-        <Ground ballPos={ballPos} />
-        <Balls />
-        <Controls mousePos={mousePos} ballPos={ballPos} />
-      </svg>
+    <>
+      <p>strokes: {strokes}</p>
       <button onClick={() => newLevel()}>new level</button>
-    </div>
+      <div ref={containerRef}>
+        <svg
+          viewBox={`${xMin} ${yMin} ${xMax - xMin} ${yMax - yMin}`}
+          xmlns="<http://www.w3.org/2000/svg>"
+          onMouseMove={onMouseOrTouchMove}
+          onTouchMove={onMouseOrTouchMove}
+          onMouseUp={fire}
+          onTouchEnd={fire}
+        >
+          <Ground ballPos={ballPos} />
+          <Balls />
+          <Controls mousePos={mousePos} ballPos={ballPos} />
+        </svg>
+      </div>
+    </>
   );
 };
 
@@ -68,6 +74,19 @@ export const Ground = ({
       y2={yMax - y2 + yMin}
     />
   ));
+  const points = [
+    ...level.domain.map((x, i) => ({ x, y: level.elevation[i] })),
+    { x: xMax, y: level.elevation[0] },
+    { x: xMax, y: yMin },
+    { x: xMin, y: yMin },
+  ];
+  const polyPoints = (
+    <polygon
+      points={points.map(({ x, y }) => `${x},${yMax - y + yMin}`).join(" ")}
+      fill="#142e1b"
+    />
+  );
+
   const fatLines = window.DEBUG
     ? relevantLines.map(({ x1, y1, x2, y2 }, i) => (
         <line
@@ -91,6 +110,7 @@ export const Ground = ({
     <>
       {lines}
       {fatLines}
+      {polyPoints}
     </>
   );
 };

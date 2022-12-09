@@ -15,6 +15,7 @@ export default defineSchema({
     dy: s.number(),
     identifier: s.string(),
     color: s.string(),
+    strokes: s.number(),
     level: s.id("levels"),
   }).index("by_level", ["level"]),
   levels: defineTable({
