@@ -54,6 +54,7 @@ export function groundLines(level: Level) {
 function step(ball: Ball, dt: number): Ball {
   let { x, y, dx, dy, ts } = ball;
 
+  // wrap around edges horizontally
   if (x < xMin) {
     x = xMax + x;
   } else if (x > xMax) {
@@ -66,14 +67,9 @@ function step(ball: Ball, dt: number): Ball {
   }
 
   ts = ts + dt;
+  // drag
   dx = 0.995 * dx;
   dy = 0.995 * dy - 0.08;
-  const magnitude = Math.sqrt(dx ** 2 + dy ** 2);
-  const speedLimit = 100;
-  if (magnitude > speedLimit) {
-    dx = (dx * speedLimit) / magnitude;
-    dy = (dy * speedLimit) / magnitude;
-  }
 
   x = x + dx;
   y = y + dy;
@@ -84,20 +80,21 @@ function step(ball: Ball, dt: number): Ball {
 // An optimization: get the relevant 3 or fewer line segments from a level
 // to check collisions against.
 export function getRelevantLand(
-  xMin: number,
-  xMax: number,
+  left: number,
+  right: number,
   level: Level
 ): { x1: number; y1: number; x2: number; y2: number }[] {
+  //const { domain, elevation } = level;
   const domain = [...level.domain, xMax];
   const elevation = [...level.elevation, level.elevation[0]];
   const lineSegments = [];
 
   for (let i = 1; i < domain.length; i++) {
     const segmentIsRelevant =
-      (domain[i - 1] <= xMin && domain[i] >= xMin) ||
-      (domain[i - 1] <= xMax && domain[i] >= xMax) ||
-      (domain[i - 1] >= xMin && domain[i - 1] <= xMax) ||
-      (domain[i] >= xMin && domain[i] <= xMax);
+      (domain[i - 1] <= left && domain[i] >= left) ||
+      (domain[i - 1] <= right && domain[i] >= right) ||
+      (domain[i - 1] >= left && domain[i - 1] <= right) ||
+      (domain[i] >= left && domain[i] <= right);
     if (segmentIsRelevant) {
       lineSegments.push({
         x1: domain[i - 1],
@@ -107,7 +104,6 @@ export function getRelevantLand(
       });
     }
   }
-
   return lineSegments;
 }
 
@@ -124,6 +120,8 @@ export function currentPosition(
 
   // infinite loops are annoying, give up after 1000 steps
   while (i++ < 1000) {
+    // step always returns a new ball object
+    const prev = newBall;
     newBall = step(newBall, 10);
 
     // TODO check if line betwen previous position and new position crosses *through* any of them
@@ -145,7 +143,8 @@ export function currentPosition(
     }
 
     if (toClosest < radius) {
-      newBall = { ...newBall, ...bounce(newBall, closestObj!) };
+      const { dx, dy } = bounce(newBall, closestObj!);
+      newBall = { ...prev, dx: dx * 0.8, dy: dy * 0.8 };
     }
 
     if (

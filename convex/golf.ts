@@ -50,8 +50,7 @@ export const createLevel = mutation(
       started: Date.now(),
       ...genLevel(),
     });
-    const val = (await db.get(id))!;
-    return val;
+    return (await db.get(id))!;
   }
 );
 
@@ -67,7 +66,13 @@ export const createBall = mutation(
       return null as any;
       throw new Error("can't find level but can't create new level");
     }
-    return db.insert("balls", {
+    // clean up any old balls with this same identifier
+    const curBalls = await db
+      .query("balls")
+      .filter((q) => q.eq(q.field("identifier"), identifier))
+      .collect();
+    await Promise.all(curBalls.map(({ _id }) => db.delete(_id)));
+    return await db.insert("balls", {
       x: 10 + Math.random() * 200,
       y: 10 + Math.random() * 200,
       dx: 0,

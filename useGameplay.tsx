@@ -20,14 +20,6 @@ export function useGameplay(): {
   const color = useRef<string>(
     `hsl(${Math.floor(Math.random() * 360)}, 100%, 50%)`
   );
-  useEffect(() => {
-    async function init() {
-      const id = await createBall(identifier.current, color.current);
-      setMyBallId(id);
-    }
-    init();
-  }, []);
-
   function onMouseOrTouchMove(
     e: React.MouseEvent<SVGSVGElement> | React.TouchEvent<SVGSVGElement>
   ) {
@@ -47,6 +39,17 @@ export function useGameplay(): {
   const [ballPos, setBallPos] = useState<{ x: number; y: number }>();
   const ball = useQuery("golf:getBall", myBallId) || null;
   const level = useQuery("golf:getLevel") || undefined;
+
+  useEffect(() => {
+    async function init() {
+      const id = await createBall(identifier.current, color.current);
+      setMyBallId(id);
+    }
+    if (level) {
+      init();
+    }
+  }, [level]);
+
   //const now = Date.now();
   //const ballPos = ball ? currentPosition(ball, now, level) : undefined;
   useEffect(() => {

@@ -1,5 +1,12 @@
+declare global {
+  interface Window {
+    DEBUG?: boolean;
+  }
+}
+
 import React, { useEffect, useState } from "react";
 import { useMutation, useQuery } from "./convex/_generated/react";
+import { useWindowSize } from "./hooks";
 import {
   currentPosition,
   yMax,
@@ -15,8 +22,7 @@ import { useGameplay } from "./useGameplay";
 
 export const Game = () => {
   const { onMouseOrTouchMove, fire, mousePos, ballPos } = useGameplay();
-  const width = 1000;
-  const height = 500;
+  const { width, height } = useWindowSize({ width: 1000, height: 500 });
   const newLevel = useMutation("golf:createLevel");
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
@@ -62,27 +68,29 @@ export const Ground = ({
       y2={yMax - y2 + yMin}
     />
   ));
-  const fatLines = relevantLines.map(({ x1, y1, x2, y2 }, i) => (
-    <line
-      key={"ground-debug" + i}
-      stroke={
-        pointToLine(ballPos || { x: 0, y: 0 }, { x1, y1, x2, y2 }) > radius
-          ? "blue"
-          : "red"
-      }
-      strokeWidth={
-        pointToLine(ballPos || { x: 0, y: 0 }, { x1, y1, x2, y2 }) * 2
-      }
-      x1={x1}
-      y1={yMax - y1 + yMin}
-      x2={x2}
-      y2={yMax - y2 + yMin}
-    />
-  ));
+  const fatLines = window.DEBUG
+    ? relevantLines.map(({ x1, y1, x2, y2 }, i) => (
+        <line
+          key={"ground-debug" + i}
+          stroke={
+            pointToLine(ballPos || { x: 0, y: 0 }, { x1, y1, x2, y2 }) > radius
+              ? "blue"
+              : "red"
+          }
+          strokeWidth={
+            pointToLine(ballPos || { x: 0, y: 0 }, { x1, y1, x2, y2 }) * 2
+          }
+          x1={x1}
+          y1={yMax - y1 + yMin}
+          x2={x2}
+          y2={yMax - y2 + yMin}
+        />
+      ))
+    : [];
   return (
     <>
       {lines}
-      {/*fatLines*/}
+      {fatLines}
     </>
   );
 };

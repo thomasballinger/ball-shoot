@@ -53,7 +53,6 @@ describe("simulation", () => {
       elevation: [yMiddle, yMiddle],
     };
 
-    // TOMHERE TODO make currentPosition take a level
     const resting = currentPosition(createBall(0, yMax), 50, flatLevel);
     expect(resting.y).toBeCloseTo(yMiddle);
   });
