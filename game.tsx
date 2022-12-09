@@ -7,6 +7,9 @@ import {
   xMax,
   xMin,
   groundLines,
+  radius,
+  getRelevantLand,
+  pointToLine,
 } from "./simulation";
 import { useGameplay } from "./useGameplay";
 
@@ -28,7 +31,7 @@ export const Game = () => {
         onMouseUp={fire}
         onTouchEnd={fire}
       >
-        <Ground />
+        <Ground ballPos={ballPos} />
         <Balls />
         <Controls mousePos={mousePos} ballPos={ballPos} />
       </svg>
@@ -37,8 +40,16 @@ export const Game = () => {
   );
 };
 
-export const Ground = () => {
+export const Ground = ({
+  ballPos,
+}: {
+  ballPos: { x: number; y: number } | undefined;
+}) => {
   const level = useQuery("golf:getLevel");
+  const relevantLines =
+    level && ballPos
+      ? getRelevantLand(ballPos.x - radius, ballPos.x + radius, level)
+      : [];
   if (!level) return <></>;
   const lines = groundLines(level).map(({ x1, y1, x2, y2 }, i) => (
     <line
@@ -51,13 +62,36 @@ export const Ground = () => {
       y2={yMax - y2 + yMin}
     />
   ));
-  return <>{lines}</>;
+  const fatLines = relevantLines.map(({ x1, y1, x2, y2 }, i) => (
+    <line
+      key={"ground-debug" + i}
+      stroke={
+        pointToLine(ballPos || { x: 0, y: 0 }, { x1, y1, x2, y2 }) > radius
+          ? "blue"
+          : "red"
+      }
+      strokeWidth={
+        pointToLine(ballPos || { x: 0, y: 0 }, { x1, y1, x2, y2 }) * 2
+      }
+      x1={x1}
+      y1={yMax - y1 + yMin}
+      x2={x2}
+      y2={yMax - y2 + yMin}
+    />
+  ));
+  return (
+    <>
+      {lines}
+      {/*fatLines*/}
+    </>
+  );
 };
 
 // memoize to prevent rerenders on parent rerenders
 export const Balls = React.memo(() => {
   const [_, setFrameNum] = useState(0);
   const balls = useQuery("golf:getBalls") || [];
+  const level = useQuery("golf:getLevel") || undefined;
 
   useEffect(() => {
     const update = () => {
@@ -72,14 +106,14 @@ export const Balls = React.memo(() => {
   return (
     <>
       {balls.map((b) => {
-        const { x, y } = currentPosition(b, now);
+        const { x, y } = currentPosition(b, now, level);
         return (
           <circle
             key={b._id.toString()}
             cx={x}
             cy={yMax - y}
-            r="8"
-            strokeWidth="4"
+            r={radius - 2}
+            strokeWidth="2"
             stroke={b.color}
             fill={"white"}
           />

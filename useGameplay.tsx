@@ -46,12 +46,13 @@ export function useGameplay(): {
   const [myBallId, setMyBallId] = useState<Id<"balls"> | null>(null);
   const [ballPos, setBallPos] = useState<{ x: number; y: number }>();
   const ball = useQuery("golf:getBall", myBallId) || null;
+  const level = useQuery("golf:getLevel") || undefined;
   //const now = Date.now();
-  //const ballPos = ball ? currentPosition(ball, now) : undefined;
+  //const ballPos = ball ? currentPosition(ball, now, level) : undefined;
   useEffect(() => {
     const handle = requestAnimationFrame(() => {
       const now = Date.now();
-      setBallPos(ball ? currentPosition(ball, now) : undefined);
+      setBallPos(ball ? currentPosition(ball, now, level) : undefined);
     });
     return () => cancelAnimationFrame(handle);
   });
@@ -61,7 +62,7 @@ export function useGameplay(): {
   const fire = () => {
     if (!mousePos || !ball) return;
     const now = Date.now();
-    const ballPos = currentPosition(ball, now);
+    const ballPos = currentPosition(ball, now, level);
     const dx = mousePos.x - ballPos.x;
     const dy = yMax - mousePos.y + yMin - ballPos.y;
     const mightiness = Math.sqrt(dx * dx + dy * dy) / 20;

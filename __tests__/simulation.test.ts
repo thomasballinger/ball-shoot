@@ -1,5 +1,12 @@
 import { expect, test, describe } from "vitest";
-import { currentPosition, yMin } from "../simulation";
+import {
+  currentPosition,
+  getRelevantLand,
+  xMax,
+  xMin,
+  yMax,
+  yMin,
+} from "../simulation";
 
 function createBall(x = 0, y = 0, dx = 0, dy = 0, ts = 0, color = "blue") {
   const ball = { x, y, dx, dy, ts, color };
@@ -39,6 +46,18 @@ describe("simulation", () => {
     expect(later.y).toBeGreaterThan(ball.y);
   });
 
+  test.only("ball bounces off of elevation", () => {
+    const yMiddle = (yMin + yMax) / 2;
+    const flatLevel = {
+      domain: [xMin, xMax],
+      elevation: [yMiddle, yMiddle],
+    };
+
+    // TOMHERE TODO make currentPosition take a level
+    const resting = currentPosition(createBall(0, yMax), 50, flatLevel);
+    expect(resting.y).toBeCloseTo(yMiddle);
+  });
+
   test("ball reaches steady state", () => {
     const ball = createBall(0, 100);
 
@@ -51,10 +70,29 @@ describe("simulation", () => {
       // console.log(cur.y);
       if (prev && JSON.stringify(prev) === JSON.stringify(cur)) {
         stable = true;
+        console.log("stable");
         break;
       }
       prev = cur;
     }
     expect(stable).toBeTruthy();
+  });
+});
+
+describe("simulation helpers", () => {
+  test("getRelevantLand", () => {
+    const yMiddle = (yMin + yMax) / 2;
+    const xMiddle = (xMin + xMax) / 2;
+    const flatLevel = {
+      domain: [xMin, xMax],
+      elevation: [yMiddle, yMiddle],
+    };
+    expect(
+      getRelevantLand(
+        Math.max(xMin, xMiddle - 1),
+        Math.min(xMax, xMiddle + 1),
+        flatLevel
+      )
+    ).toEqual([{ x1: xMin, y1: yMiddle, x2: xMax, y2: yMiddle }]);
   });
 });

@@ -121,13 +121,14 @@ export const publishStroke = mutation(
     if (mightiness < 0 || mightiness > 20) {
       throw new Error("You can't hit the ball that hard!");
     }
+    const level = await currentLevel({ db });
 
     let [dx, dy] = degreesToVector(angleInDegrees);
     dx *= mightiness;
     dy *= mightiness;
 
     const now = Date.now();
-    const { x, y } = currentPosition(ball, now);
+    const { x, y } = currentPosition(ball, now, level || undefined);
     const DELAY = 0;
     const newBall = { ...ball, x, y, dx, dy, ts: Date.now() + DELAY };
 
