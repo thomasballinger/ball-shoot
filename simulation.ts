@@ -9,33 +9,70 @@ export type Ball = {
   dx: number;
   dy: number;
   ts: number;
-  color: string;
 };
 
 export type Level = {
   domain: number[];
   elevation: number[];
+  hole: { x1: number; x2: number };
 };
 
-export function genLevel() {
-  // start on the bottom half of the playfield, so that there's more space to play
+export function generateLevel(): Level {
+  const numSegments = 50;
   const elevations = [Math.random() * yMin + yExtent / 2];
-  while (elevations.length < 20) {
+  while (elevations.length < numSegments) {
     const prev = elevations[elevations.length - 1];
+    const prevDelta = prev - (elevations[elevations.length - 2] || prev);
     const elevation = Math.max(
       yMin,
-      Math.min(yMax / 2, prev + ((Math.random() - 0.5) * yExtent) / 2)
+      Math.min(
+        yMin + yExtent / 2,
+        prev + (prevDelta + (Math.random() * 2 - 1) * 30)
+      )
     );
     elevations.push(elevation);
   }
 
+  const domain = [0].concat(
+    [...Array(numSegments - 1).keys()]
+      .map(() => xMin + xExtent * Math.random())
+      .sort((a, b) => a - b)
+  );
+
+  let hole;
+  {
+    // add a hole in somewhere in the second half-ish
+    const holeIndex = Math.floor(
+      numSegments / 2 + Math.random() * numSegments * (4 / 9)
+    );
+
+    const toReplace =
+      domain.findIndex(
+        (x, i) => i > holeIndex && x > domain[holeIndex] + radius * 3 + 0.2
+      ) - holeIndex;
+    domain.splice(
+      holeIndex,
+      toReplace,
+      domain[holeIndex],
+      domain[holeIndex] + 0.1,
+      domain[holeIndex] + radius * 3 + 0.1,
+      domain[holeIndex] + radius * 3 + 0.2
+    );
+    elevations.splice(
+      holeIndex,
+      toReplace,
+      elevations[holeIndex],
+      elevations[holeIndex] - radius * 2.5,
+      elevations[holeIndex] - radius * 2.5,
+      elevations[holeIndex]
+    );
+    hole = { x1: domain[holeIndex + 1], x2: domain[holeIndex + 4] };
+  }
+
   return {
+    domain,
     elevation: elevations,
-    domain: [0].concat(
-      [...Array(19).keys()]
-        .map(() => xMin + xExtent * Math.random())
-        .sort((a, b) => a - b)
-    ),
+    hole,
   };
 }
 
@@ -49,6 +86,22 @@ export function groundLines(level: Level) {
   const last = lines[lines.length - 1];
   lines.push({ x1: last.x2, y1: last.y2, x2: xMax, y2: lines[0].y1 });
   return lines;
+}
+
+export function elevationAtX(level: Level, x: number): number {
+  const domain = [...level.domain, xMax];
+  const elevation = [...level.elevation, level.elevation[0]];
+
+  for (let i = 1; i < domain.length; i++) {
+    if (domain[i - 1] <= x && x <= domain[i]) {
+      return (
+        elevation[i - 1] +
+        ((elevation[i] - elevation[i - 1]) * (x - domain[i - 1])) /
+          (domain[i] - domain[i - 1])
+      );
+    }
+  }
+  return 0;
 }
 
 function step(ball: Ball, dt: number): Ball {
@@ -111,7 +164,11 @@ export function getRelevantLand(
 export function currentPosition(
   ball: Ball,
   now: number,
-  level: Level = { domain: [xMin, xMax], elevation: [yMin, yMin] }
+  level: Level = {
+    domain: [xMin, xMax],
+    elevation: [yMin, yMin],
+    hole: { x1: -10000, x2: -10000 },
+  }
 ): { x: number; y: number } {
   if (ball.ts >= now) return ball;
 

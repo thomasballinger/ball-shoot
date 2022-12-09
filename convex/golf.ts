@@ -1,8 +1,9 @@
 import {
-  Ball,
   degreesToVector,
   currentPosition,
-  genLevel,
+  generateLevel,
+  xMax,
+  xMin,
 } from "../simulation";
 import { query, mutation, DatabaseReader } from "./_generated/server";
 import { Document, Id } from "./_generated/dataModel";
@@ -48,7 +49,7 @@ export const createLevel = mutation(
     }
     const id = await db.insert("levels", {
       started: Date.now(),
-      ...genLevel(),
+      ...generateLevel(),
     });
     return (await db.get(id))!;
   }
@@ -63,7 +64,6 @@ export const createBall = mutation(
       curLevel = await createLevel(ctx);
     }
     if (!curLevel) {
-      return null as any;
       throw new Error("can't find level but can't create new level");
     }
     // clean up any old balls with this same identifier
@@ -74,7 +74,7 @@ export const createBall = mutation(
     await Promise.all(curBalls.map(({ _id }) => db.delete(_id)));
     return await db.insert("balls", {
       x: 10 + Math.random() * 200,
-      y: 10 + Math.random() * 200,
+      y: xMin + ((xMax - xMin) * (1 + Math.random())) / 2,
       dx: 0,
       dy: 0,
       ts: Date.now(),

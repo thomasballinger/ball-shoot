@@ -2,6 +2,7 @@ import { expect, test, describe } from "vitest";
 import {
   currentPosition,
   getRelevantLand,
+  radius,
   xMax,
   xMin,
   yMax,
@@ -36,25 +37,18 @@ describe("simulation", () => {
     const ball = createBall(0, 10);
     const later = currentPosition(ball, 1000);
     expect(later.x).toEqual(0);
-    expect(later.y).toBeCloseTo(0.613, 3);
+    expect(later.y).toBeCloseTo(0 + radius, 0);
   });
 
-  test("ball bounces off the yMin floor", () => {
-    const ball = createBall(0, yMin, 0, -1);
-    const later = currentPosition(ball, 100);
-    expect(later.x).toEqual(ball.x);
-    expect(later.y).toBeGreaterThan(ball.y);
-  });
-
-  test.only("ball bounces off of elevation", () => {
+  test("ball bounces off of elevation", () => {
     const yMiddle = (yMin + yMax) / 2;
     const flatLevel = {
       domain: [xMin, xMax],
       elevation: [yMiddle, yMiddle],
     };
 
-    const resting = currentPosition(createBall(0, yMax), 50, flatLevel);
-    expect(resting.y).toBeCloseTo(yMiddle);
+    const resting = currentPosition(createBall(0, yMax), 10000, flatLevel);
+    expect(resting.y).toBeCloseTo(yMiddle + radius, 0);
   });
 
   test("ball reaches steady state", () => {
