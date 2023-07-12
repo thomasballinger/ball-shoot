@@ -5,7 +5,7 @@ import styles from "../styles/Home.module.css";
 
 const Home: NextPage = () => {
   return (
-    <div className={styles.container}>
+    <div className={styles.container} style={{ userSelect: "none" }}>
       <Head>
         <title>It's like ManyGolf</title>
         <meta name="description" content="Multiplayer side-view golf game" />

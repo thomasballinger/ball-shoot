@@ -1,4 +1,4 @@
-export const [xMin, xMax, yMin, yMax] = [0, 1000, 0, 600];
+export const [xMin, xMax, yMin, yMax] = [0, 1200, 0, 600];
 export const radius = 6;
 const xExtent = xMax - xMin;
 const yExtent = yMax - yMin;
@@ -67,6 +67,11 @@ export function generateLevel(): Level {
       elevations[holeIndex]
     );
     hole = { x1: domain[holeIndex + 1], x2: domain[holeIndex + 4] };
+
+    // bump everything up a bit
+    elevations.forEach((e, i, arr) => {
+      arr[i] = (e / (yExtent + radius * 3)) * yExtent + radius * 3;
+    });
   }
 
   return {

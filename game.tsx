@@ -4,7 +4,7 @@ declare global {
   }
 }
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { ChangeEvent, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useDebug, useDimensions } from "./hooks";
 import { api } from "./convex/_generated/api";
@@ -24,34 +24,44 @@ import { ground } from "./style";
 
 // takes up the whole screen
 export const Game = () => {
-  const { onMouseOrTouchMove, fire, mousePos, ballPos, strokes } =
+  const [mouseDown, setMouseDown] = useState(false);
+  const { onMouseOrTouchMove, fire, mousePos, ballPos, strokes, setName } =
     useGameplay();
-  const containerRef = useRef<HTMLDivElement>(null);
-  /*
-  const { width, height } = useDimensions({
-    el: containerRef.current,
-  });
-  */
-  const newLevel = useMutation(api.golf.createLevel);
+  const nextLevel = useMutation(api.golf.createLevel);
   return (
     <>
-      <p>strokes: {strokes}</p>
-      <button onClick={() => newLevel()}>new level</button>
+      <div style={{ display: "flex", flexDirection: "row" }}>
+        <div>strokes: {strokes}</div>
+        <input
+          onChange={(e: ChangeEvent<HTMLInputElement>) => {
+            console.log(e.currentTarget.value);
+            setName(e.currentTarget.value);
+          }}
+        />
+      </div>
+      <button onClick={() => nextLevel()}>new level</button>
       <svg
         style={{
-          width: "100%",
           aspectRatio: `${xMax - xMin} / ${yMax - yMin}`,
         }}
         viewBox={`${xMin} ${yMin} ${xMax - xMin} ${yMax - yMin}`}
         xmlns="<http://www.w3.org/2000/svg>"
         onMouseMove={onMouseOrTouchMove}
         onTouchMove={onMouseOrTouchMove}
-        onMouseUp={fire}
-        onTouchEnd={fire}
+        onMouseUp={() => {
+          setMouseDown(false);
+          fire();
+        }}
+        onTouchEnd={() => {
+          setMouseDown(false);
+          fire();
+        }}
+        onMouseDown={() => setMouseDown(true)}
+        onTouchStart={() => setMouseDown(true)}
       >
         <Ground ballPos={ballPos} />
         <Balls />
-        <Controls mousePos={mousePos} ballPos={ballPos} />
+        <Controls mousePos={mousePos} ballPos={ballPos} mouseDown={mouseDown} />
       </svg>
       <div style={{ backgroundColor: ground, flexGrow: 1 }}></div>
     </>
@@ -150,15 +160,20 @@ export const Balls = React.memo(() => {
           level
         );
         return (
-          <circle
-            key={b._id.toString()}
-            cx={x}
-            cy={yMax - y}
-            r={radius - 2}
-            strokeWidth="2"
-            stroke={b.color}
-            fill={"white"}
-          />
+          <>
+            <text key={b._id + "-name"} x={x} y={yMax - y - 15} fill="white">
+              {b.name}
+            </text>
+            <circle
+              key={b._id}
+              cx={x}
+              cy={yMax - y}
+              r={radius - 2}
+              strokeWidth="2"
+              stroke={b.color}
+              fill={"white"}
+            />
+          </>
         );
       })}
     </>
@@ -168,9 +183,11 @@ export const Balls = React.memo(() => {
 export const Controls = ({
   mousePos,
   ballPos,
+  mouseDown,
 }: {
   mousePos: { x: number; y: number } | undefined;
   ballPos: { x: number; y: number } | undefined;
+  mouseDown: boolean;
 }) => {
   if (!ballPos || !mousePos) return null;
   const x1 = ballPos.x;
@@ -179,6 +196,7 @@ export const Controls = ({
   const y2 = mousePos.y;
   const tooFar = dist(x1, y1, x2, y2) / 20 > 20;
   const color = tooFar ? "red" : "black";
+  if (!mouseDown) return null;
   return (
     <line
       stroke={color}

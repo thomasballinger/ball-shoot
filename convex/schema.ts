@@ -17,10 +17,11 @@ export default defineSchema({
     identifier: v.string(), // secret access token that allows strokes
     color: v.string(),
     strokes: v.number(),
-    /** the time at which the level current level is complete */
-    done: v.optional(v.union(v.boolean(), v.number())),
+    name: v.optional(v.string()),
     level: v.id("levels"),
-  }).index("by_level", ["level"]),
+  })
+    .index("by_level", ["level"])
+    .index("by_identifier", ["identifier"]),
   levels: defineTable({
     started: v.number(),
     elevation: v.array(v.number()),

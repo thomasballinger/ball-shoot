@@ -9,6 +9,19 @@ import { query, mutation, DatabaseReader } from "./_generated/server";
 import { Doc, Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 
+export const setName = mutation({
+  args: { name: v.string(), identifier: v.string() },
+  handler: async (ctx, { name, identifier }) => {
+    const ball = (await ctx.db
+      .query("balls")
+      .withIndex("by_identifier")
+      .filter((q) => q.eq(q.field("identifier"), identifier))
+      .unique())!;
+    ball.name = name;
+    await ctx.db.replace(ball._id, ball);
+  },
+});
+
 export const getBalls = query(async ({ db }) => {
   const curLevel = await currentLevel({ db });
   if (curLevel === null) return [];
@@ -99,7 +112,6 @@ export const createBall = mutation({
       identifier,
       level: curLevel?._id,
       strokes: 0,
-      done: false,
     });
   },
 });

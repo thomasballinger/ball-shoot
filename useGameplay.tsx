@@ -11,6 +11,7 @@ export function useGameplay(): {
   fire: () => any;
   ballPos: { x: number; y: number } | undefined;
   mousePos: { x: number; y: number } | undefined;
+  setName: (name: string) => Promise<null>;
   strokes: number;
 } {
   const [mousePos, setMousePos] = useState<
@@ -18,7 +19,7 @@ export function useGameplay(): {
   >();
 
   const createBall = useMutation(api.golf.createBall);
-  const identifier = useRef<string>("user" + Math.random());
+  const identifier = useRef<string>("secret:" + Math.random());
   const color = useRef<string>(
     `hsl(${Math.floor(Math.random() * 360)}, 100%, 50%)`
   );
@@ -83,11 +84,16 @@ export function useGameplay(): {
     publish({ identifier: identifier.current, angleInDegrees, mightiness });
   };
 
+  const _setName = useMutation(api.golf.setName);
+  const setName = (name: string) =>
+    _setName({ identifier: identifier.current, name });
+
   return {
     onMouseOrTouchMove,
     fire,
     ballPos,
     mousePos,
     strokes: ball ? ball.strokes : 0,
+    setName,
   };
 }
