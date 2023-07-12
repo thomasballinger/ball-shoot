@@ -4,22 +4,20 @@ import { api, internal } from "./_generated/api";
 import { createBall, setName } from "./golf";
 
 export const cpuMove = internalMutation(async (ctx) => {
-  const identifier = "secretCPU";
+  const num = Math.ceil(Math.random() * 100);
+  const identifier = "secretCPU-" + num;
   const ballId = await createBall(ctx, { color: "red", identifier });
   await setName(ctx, {
-    name: "CPU " + Math.ceil(Math.random() * 100),
+    name: "CPU " + num,
     identifier,
   });
-  ctx.scheduler.runAfter(5000, api.golf.publishStroke, {
-    identifier,
-    angleInDegrees: Math.random() * 180,
-    mightiness: Math.random() * 20,
-  });
-  ctx.scheduler.runAfter(10000, api.golf.publishStroke, {
-    identifier,
-    angleInDegrees: Math.random() * 180,
-    mightiness: Math.random() * 20,
-  });
+  for (const delay of [5000, 10000, 15000, 20000, 25000, 30000]) {
+    ctx.scheduler.runAfter(delay, api.golf.publishStroke, {
+      identifier,
+      angleInDegrees: Math.random() * 180,
+      mightiness: Math.random() * 20,
+    });
+  }
 });
 
 const crons = cronJobs();
