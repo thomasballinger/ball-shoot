@@ -1,7 +1,8 @@
 import { Id } from "./convex/_generated/dataModel";
 import React, { useEffect, useRef, useState } from "react";
-import { useMutation, useQuery } from "./convex/_generated/react";
+import { useMutation, useQuery } from "convex/react";
 import { currentPosition, xMax, xMin, yMax, yMin } from "./simulation";
+import { api } from "./convex/_generated/api";
 
 export function useGameplay(): {
   onMouseOrTouchMove: (
@@ -16,7 +17,7 @@ export function useGameplay(): {
     { x: number; y: number } | undefined
   >();
 
-  const createBall = useMutation("golf:createBall");
+  const createBall = useMutation(api.golf.createBall);
   const identifier = useRef<string>("user" + Math.random());
   const color = useRef<string>(
     `hsl(${Math.floor(Math.random() * 360)}, 100%, 50%)`
@@ -38,12 +39,15 @@ export function useGameplay(): {
 
   const [myBallId, setMyBallId] = useState<Id<"balls"> | null>(null);
   const [ballPos, setBallPos] = useState<{ x: number; y: number }>();
-  const ball = useQuery("golf:getBall", myBallId) || null;
-  const level = useQuery("golf:getLevel") || undefined;
+  const ball = useQuery(api.golf.getBall, { id: myBallId }) || null;
+  const level = useQuery(api.golf.getLevel) || undefined;
 
   useEffect(() => {
     async function init() {
-      const id = await createBall(identifier.current, color.current);
+      const id = await createBall({
+        identifier: identifier.current,
+        color: color.current,
+      });
       setMyBallId(id);
     }
     if (level) {
@@ -61,7 +65,7 @@ export function useGameplay(): {
     return () => cancelAnimationFrame(handle);
   });
 
-  const publish = useMutation("golf:publishStroke");
+  const publish = useMutation(api.golf.publishStroke);
 
   const fire = () => {
     if (!mousePos || !ball) return;
@@ -76,7 +80,7 @@ export function useGameplay(): {
       return;
     }
 
-    publish(identifier.current, angleInDegrees, mightiness);
+    publish({ identifier: identifier.current, angleInDegrees, mightiness });
   };
 
   return {

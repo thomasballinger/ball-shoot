@@ -1,27 +1,30 @@
-import { defineSchema, defineTable, s } from "convex/schema";
-import { Document } from "./_generated/dataModel";
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+import { Doc } from "./_generated/dataModel";
 
 // the Ball type used in client code doesn't have an identifier
-export type Ball = Omit<Document<"balls">, "identifier">;
+export type Ball = Omit<Doc<"balls">, "identifier">;
 
-export type Level = Document<"levels">;
+export type Level = Doc<"levels">;
 
 export default defineSchema({
   balls: defineTable({
-    ts: s.number(),
-    x: s.number(),
-    y: s.number(),
-    dx: s.number(),
-    dy: s.number(),
-    identifier: s.string(),
-    color: s.string(),
-    strokes: s.number(),
-    level: s.id("levels"),
+    ts: v.number(), // Time of last stroke
+    x: v.number(), // position and velocity at time of stroke
+    y: v.number(),
+    dx: v.number(),
+    dy: v.number(),
+    identifier: v.string(), // secret access token that allows strokes
+    color: v.string(),
+    strokes: v.number(),
+    /** the time at which the level current level is complete */
+    done: v.optional(v.union(v.boolean(), v.number())),
+    level: v.id("levels"),
   }).index("by_level", ["level"]),
   levels: defineTable({
-    started: s.number(),
-    elevation: s.array(s.number()),
-    domain: s.array(s.number()),
-    hole: s.object({ x1: s.number(), x2: s.number() }),
+    started: v.number(),
+    elevation: v.array(v.number()),
+    domain: v.array(v.number()),
+    hole: v.object({ x1: v.number(), x2: v.number() }),
   }).index("by_level_start_time", ["started"]),
 });

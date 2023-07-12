@@ -5,8 +5,9 @@ declare global {
 }
 
 import React, { useEffect, useRef, useState } from "react";
-import { useMutation, useQuery } from "./convex/_generated/react";
+import { useMutation, useQuery } from "convex/react";
 import { useDimensions } from "./hooks";
+import { api } from "./convex/_generated/api";
 import {
   currentPosition,
   yMax,
@@ -22,13 +23,18 @@ import { useGameplay } from "./useGameplay";
 
 // takes up the whole screen
 export const Game = () => {
-  const { onMouseOrTouchMove, fire, mousePos, ballPos, strokes } =
-    useGameplay();
+  const {
+    onMouseOrTouchMove,
+    fire,
+    mousePos,
+    ballPos,
+    strokes,
+  } = useGameplay();
   const containerRef = useRef<HTMLDivElement>(null);
   const { width, height } = useDimensions({
     el: containerRef.current,
   });
-  const newLevel = useMutation("golf:createLevel");
+  const newLevel = useMutation(api.golf.createLevel);
   return (
     <>
       <p>strokes: {strokes}</p>
@@ -56,7 +62,7 @@ export const Ground = ({
 }: {
   ballPos: { x: number; y: number } | undefined;
 }) => {
-  const level = useQuery("golf:getLevel");
+  const level = useQuery(api.golf.getLevel);
   const relevantLines =
     level && ballPos
       ? getRelevantLand(ballPos.x - radius, ballPos.x + radius, level)
@@ -117,8 +123,8 @@ export const Ground = ({
 // memoize to prevent rerenders on parent rerenders
 export const Balls = React.memo(() => {
   const [_, setFrameNum] = useState(0);
-  const balls = useQuery("golf:getBalls") || [];
-  const level = useQuery("golf:getLevel") || undefined;
+  const balls = useQuery(api.golf.getBalls) || [];
+  const level = useQuery(api.golf.getLevel) || undefined;
 
   useEffect(() => {
     const update = () => {

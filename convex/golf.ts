@@ -6,7 +6,8 @@ import {
   xMin,
 } from "../simulation";
 import { query, mutation, DatabaseReader } from "./_generated/server";
-import { Document, Id } from "./_generated/dataModel";
+import { Doc, Id } from "./_generated/dataModel";
+import { v } from "convex/values";
 
 export const getBalls = query(async ({ db }) => {
   const curLevel = await currentLevel({ db });
@@ -27,7 +28,7 @@ function currentLevel({
   db,
 }: {
   db: DatabaseReader;
-}): Promise<Document<"levels"> | null> {
+}): Promise<Doc<"levels"> | null> {
   return db
     .query("levels")
     .withIndex("by_level_start_time", (q) => q.gt("started", 0))
@@ -39,7 +40,7 @@ function currentLevel({
 const ROUND_LENGTH = 10000;
 
 export const createLevel = mutation(
-  async ({ db }): Promise<Document<"levels"> | null> => {
+  async ({ db }): Promise<Doc<"levels"> | null> => {
     const curLevel = await currentLevel({ db });
     if (curLevel) {
       const ago = Date.now() - curLevel.started;
@@ -55,13 +56,14 @@ export const createLevel = mutation(
   }
 );
 
-export const createBall = mutation(
-  async (ctx, identifier, color): Promise<Id<"balls">> => {
+export const createBall = mutation({
+  args: { identifier: v.string(), color: v.string() },
+  handler: async (ctx, { identifier, color }): Promise<Id<"balls">> => {
     const { db } = ctx;
     // fails if there's no level? ick, what do we do here?
     let curLevel = await currentLevel(ctx);
     if (curLevel === null) {
-      curLevel = await createLevel(ctx);
+      curLevel = await createLevel(ctx, {});
     }
     if (!curLevel) {
       throw new Error("can't find level but can't create new level");
@@ -82,28 +84,39 @@ export const createBall = mutation(
       identifier,
       level: curLevel?._id,
       strokes: 0,
+      done: false,
     });
+  },
+});
+
+export const getBall = query(
+  async ({ db }, { id }: { id: Id<"balls"> | null }) => {
+    if (!id) return null;
+    const ball = await db.get(id);
+    if (!ball) return ball;
+    const { identifier, ...rest } = ball;
+    return rest;
   }
 );
 
-export const getBall = query(async ({ db }, id: Id<"balls"> | null) => {
-  if (!id) return null;
-  const ball = await db.get(id);
-  if (!ball) return ball;
-  const { identifier, ...rest } = ball;
-  return rest;
-});
-
-export const getLevel = query(({ db }): Promise<Document<"levels"> | null> => {
-  return currentLevel({ db });
-});
+export const getLevel = query(
+  ({ db }): Promise<Doc<"levels"> | null> => {
+    return currentLevel({ db });
+  }
+);
 
 export const publishStroke = mutation(
   async (
     { db },
-    identifier: string,
-    angleInDegrees: number,
-    mightiness: number
+    {
+      identifier,
+      angleInDegrees,
+      mightiness,
+    }: {
+      identifier: string;
+      angleInDegrees: number;
+      mightiness: number;
+    }
   ) => {
     if (
       typeof identifier !== "string" ||
