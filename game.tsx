@@ -201,6 +201,7 @@ export const Controls = ({
   if (!mouseDown) return null;
   return (
     <line
+      key="controls"
       stroke={color}
       strokeWidth={tooFar ? 1 : 3}
       x1={ballPos.x}
