@@ -14,6 +14,7 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as crons from "../crons";
 import type * as golf from "../golf";
 
 /**
@@ -25,6 +26,7 @@ import type * as golf from "../golf";
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  crons: typeof crons;
   golf: typeof golf;
 }>;
 export declare const api: FilterApi<

@@ -21,6 +21,7 @@ import {
 } from "./simulation";
 import { useGameplay } from "./useGameplay";
 import { ground } from "./style";
+import { Scoreboard } from "./score";
 
 // takes up the whole screen
 export const Game = () => {
@@ -32,14 +33,15 @@ export const Game = () => {
     <>
       <div style={{ display: "flex", flexDirection: "row" }}>
         <div>strokes: {strokes}</div>
+        <Scoreboard />
         <input
           onChange={(e: ChangeEvent<HTMLInputElement>) => {
             console.log(e.currentTarget.value);
             setName(e.currentTarget.value);
           }}
         />
+        <button onClick={() => nextLevel()}>new level</button>
       </div>
-      <button onClick={() => nextLevel()}>new level</button>
       <svg
         style={{
           aspectRatio: `${xMax - xMin} / ${yMax - yMin}`,
