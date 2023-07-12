@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
 
+declare global {
+  interface Window {
+    DEBUG?: boolean;
+  }
+}
+
 export function useDimensions({
   el,
   width,
@@ -34,6 +40,7 @@ export function useDimensions({
 
 export function useDebug(value: Record<string, any>) {
   if (typeof document === "undefined") return;
+  if (!window.DEBUG) return;
   const el = document.querySelector(".debug");
   if (!el) return;
   el.innerHTML = `<pre><code></code></pre>`;

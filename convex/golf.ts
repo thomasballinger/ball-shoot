@@ -39,13 +39,28 @@ function currentLevel({
 // The minimum amount of time before a new level can be created
 const ROUND_LENGTH = 10000;
 
+async function ballsForLevel(db: DatabaseReader, levelId: Id<"levels">) {
+  const balls = await db
+    .query("balls")
+    .withIndex("by_level", (q) => q.eq("level", levelId))
+    .collect();
+  return balls;
+}
+
 export const createLevel = mutation(
   async ({ db }): Promise<Doc<"levels"> | null> => {
     const curLevel = await currentLevel({ db });
     if (curLevel) {
-      const ago = Date.now() - curLevel.started;
-      if (ago < ROUND_LENGTH) {
-        return null;
+      const now = Date.now();
+      const timeUp = now - curLevel.started > ROUND_LENGTH;
+      const balls = await ballsForLevel(db, curLevel._id);
+      if (!timeUp) {
+        const inHoles = balls.map(
+          (b) => currentPosition(b, now, curLevel).isInHole
+        );
+        const oneIn = inHoles.some((x) => x);
+        const allIn = inHoles.every((x) => x);
+        if (!allIn) return null;
       }
     }
     const id = await db.insert("levels", {
@@ -99,11 +114,9 @@ export const getBall = query(
   }
 );
 
-export const getLevel = query(
-  ({ db }): Promise<Doc<"levels"> | null> => {
-    return currentLevel({ db });
-  }
-);
+export const getLevel = query(({ db }): Promise<Doc<"levels"> | null> => {
+  return currentLevel({ db });
+});
 
 export const publishStroke = mutation(
   async (
