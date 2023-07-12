@@ -31,3 +31,11 @@ export function useDimensions({
   }, [el]);
   return dimensions;
 }
+
+export function useDebug(value: Record<string, any>) {
+  if (typeof document === "undefined") return;
+  const el = document.querySelector(".debug");
+  if (!el) return;
+  el.innerHTML = `<pre><code></code></pre>`;
+  el.children[0].children[0].textContent = JSON.stringify(value, null, 2);
+}

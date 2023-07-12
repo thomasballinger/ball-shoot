@@ -6,7 +6,7 @@ declare global {
 
 import React, { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { useDimensions } from "./hooks";
+import { useDebug, useDimensions } from "./hooks";
 import { api } from "./convex/_generated/api";
 import {
   currentPosition,
@@ -20,39 +20,40 @@ import {
   pointToLine,
 } from "./simulation";
 import { useGameplay } from "./useGameplay";
+import { ground } from "./style";
 
 // takes up the whole screen
 export const Game = () => {
-  const {
-    onMouseOrTouchMove,
-    fire,
-    mousePos,
-    ballPos,
-    strokes,
-  } = useGameplay();
+  const { onMouseOrTouchMove, fire, mousePos, ballPos, strokes } =
+    useGameplay();
   const containerRef = useRef<HTMLDivElement>(null);
+  /*
   const { width, height } = useDimensions({
     el: containerRef.current,
   });
+  */
   const newLevel = useMutation(api.golf.createLevel);
   return (
     <>
       <p>strokes: {strokes}</p>
       <button onClick={() => newLevel()}>new level</button>
-      <div ref={containerRef}>
-        <svg
-          viewBox={`${xMin} ${yMin} ${xMax - xMin} ${yMax - yMin}`}
-          xmlns="<http://www.w3.org/2000/svg>"
-          onMouseMove={onMouseOrTouchMove}
-          onTouchMove={onMouseOrTouchMove}
-          onMouseUp={fire}
-          onTouchEnd={fire}
-        >
-          <Ground ballPos={ballPos} />
-          <Balls />
-          <Controls mousePos={mousePos} ballPos={ballPos} />
-        </svg>
-      </div>
+      <svg
+        style={{
+          width: "100%",
+          aspectRatio: `${xMax - xMin} / ${yMax - yMin}`,
+        }}
+        viewBox={`${xMin} ${yMin} ${xMax - xMin} ${yMax - yMin}`}
+        xmlns="<http://www.w3.org/2000/svg>"
+        onMouseMove={onMouseOrTouchMove}
+        onTouchMove={onMouseOrTouchMove}
+        onMouseUp={fire}
+        onTouchEnd={fire}
+      >
+        <Ground ballPos={ballPos} />
+        <Balls />
+        <Controls mousePos={mousePos} ballPos={ballPos} />
+      </svg>
+      <div style={{ backgroundColor: ground, flexGrow: 1 }}></div>
     </>
   );
 };
@@ -88,7 +89,7 @@ export const Ground = ({
   const polyPoints = (
     <polygon
       points={points.map(({ x, y }) => `${x},${yMax - y + yMin}`).join(" ")}
-      fill="#142e1b"
+      fill={ground}
     />
   );
 
@@ -136,10 +137,18 @@ export const Balls = React.memo(() => {
 
   const now = Date.now();
 
+  const pos = balls.map((b) => currentPosition(b, now, level));
+
+  useDebug({ _, pos });
+
   return (
     <>
       {balls.map((b) => {
-        const { x, y } = currentPosition(b, now, level);
+        const { x, y, isInHole, isStuckOnGround } = currentPosition(
+          b,
+          now,
+          level
+        );
         return (
           <circle
             key={b._id.toString()}

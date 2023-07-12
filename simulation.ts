@@ -169,8 +169,9 @@ export function currentPosition(
     elevation: [yMin, yMin],
     hole: { x1: -10000, x2: -10000 },
   }
-): { x: number; y: number } {
-  if (ball.ts >= now) return ball;
+): { x: number; y: number; isInHole: boolean; isStuckOnGround: boolean } {
+  if (ball.ts >= now)
+    return { ...ball, isInHole: false, isStuckOnGround: false };
 
   let newBall = ball;
   let i = 0;
@@ -209,16 +210,20 @@ export function currentPosition(
       Math.abs(newBall.dy * newBall.dy + newBall.dx * newBall.dx) < 1
     ) {
       // stuck on ground
-      return newBall;
+      return {
+        ...newBall,
+        isStuckOnGround: true,
+        isInHole: level.hole.x1 < ball.x && ball.x < level.hole.x2,
+      };
     }
 
     if (newBall.ts > now) {
       // we have reached the present
-      return newBall;
+      return { ...newBall, isInHole: false, isStuckOnGround: false };
     }
   }
   // ran out of simulation steps
-  return newBall;
+  return { ...newBall, isInHole: false, isStuckOnGround: false };
 }
 
 export const degreesToVector = (deg: number) => [

@@ -14,10 +14,22 @@ const Home: NextPage = () => {
         style={{
           width: "100vw",
           height: "100vh",
-          display: "flex",
+          display: "inline-flex",
           flexDirection: "column",
+          overflow: "none",
         }}
       >
+        <div
+          className="debug"
+          style={{
+            position: "absolute",
+            backgroundColor: " rgba(0, 0, 0, 0.2)",
+            pointerEvents: "none",
+            color: "white",
+            overflow: "scroll",
+            maxHeight: "100vh",
+          }}
+        ></div>
         <Game />
       </main>
     </div>
