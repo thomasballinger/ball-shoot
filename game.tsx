@@ -31,12 +31,17 @@ export const Game = () => {
   const nextLevel = useMutation(api.golf.createLevel);
   return (
     <>
-      <div style={{ display: "flex", flexDirection: "row" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          backgroundColor: "lightgray",
+        }}
+      >
         <div>strokes: {strokes}</div>
         <Scoreboard />
         <input
           onChange={(e: ChangeEvent<HTMLInputElement>) => {
-            console.log(e.currentTarget.value);
             setName(e.currentTarget.value);
           }}
         />

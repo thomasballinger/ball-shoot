@@ -19,6 +19,8 @@ export default defineSchema({
     strokes: v.number(),
     name: v.optional(v.string()),
     level: v.id("levels"),
+    grounded: v.optional(v.boolean()),
+    finished: v.optional(v.boolean()),
   })
     .index("by_level", ["level"])
     .index("by_identifier", ["identifier"]),

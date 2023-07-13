@@ -165,6 +165,17 @@ export function getRelevantLand(
   return lineSegments;
 }
 
+export function restingPosition(
+  ball: Ball,
+  level: Level = {
+    domain: [xMin, xMax],
+    elevation: [yMin, yMin],
+    hole: { x1: -10000, x2: -10000 },
+  }
+) {
+  return currentPosition(ball, Infinity, level);
+}
+
 // TODO add memoization
 export function currentPosition(
   ball: Ball,

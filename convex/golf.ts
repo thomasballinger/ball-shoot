@@ -5,7 +5,12 @@ import {
   xMax,
   xMin,
 } from "../simulation";
-import { query, mutation, DatabaseReader } from "./_generated/server";
+import {
+  query,
+  mutation,
+  DatabaseReader,
+  internalMutation,
+} from "./_generated/server";
 import { Doc, Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 
@@ -130,26 +135,13 @@ export const getLevel = query(({ db }): Promise<Doc<"levels"> | null> => {
   return currentLevel({ db });
 });
 
-export const publishStroke = mutation(
-  async (
-    { db },
-    {
-      identifier,
-      angleInDegrees,
-      mightiness,
-    }: {
-      identifier: string;
-      angleInDegrees: number;
-      mightiness: number;
-    }
-  ) => {
-    if (
-      typeof identifier !== "string" ||
-      typeof angleInDegrees !== "number" ||
-      typeof mightiness !== "number"
-    ) {
-      throw new Error("bad arg types");
-    }
+export const publishStroke = mutation({
+  args: {
+    identifier: v.string(),
+    angleInDegrees: v.number(),
+    mightiness: v.number(),
+  },
+  handler: async ({ db }, { identifier, angleInDegrees, mightiness }) => {
     const ball = await db
       .query("balls")
       .filter((q) => q.eq(q.field("identifier"), identifier))
@@ -183,5 +175,15 @@ export const publishStroke = mutation(
     };
 
     db.replace(ball._id, newBall);
+  },
+});
+
+export const updateBall = internalMutation(
+  async (ctx, { ballId }: { ballId: Id<"balls"> }) => {
+    const ball = await ctx.db.get(ballId)!;
+    if (!ball) throw new Error("bad id " + ballId);
+    const level = await ctx.db.get(ball.level);
+
+    // TODO
   }
 );
