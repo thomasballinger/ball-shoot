@@ -120,6 +120,8 @@ export const createBall = mutation({
       level: curLevel?._id,
       strokes: 0,
       updates: 0,
+      finished: false,
+      grounded: false,
     });
   },
 });
@@ -180,6 +182,8 @@ export const publishStroke = mutation({
       ts: Date.now() + DELAY,
       strokes: ball.strokes + 1,
       updates: ball.updates + 1,
+      finished: false,
+      grounded: false,
     };
 
     db.replace(ball._id, newBall);
@@ -223,7 +227,7 @@ export const updateBall = internalMutation(
       // accuracy.
       throw new Error("Simulation took too many steps, ball didn't stop");
     }
-    const { x, y, ts } = eventualPosition;
+    const { x, y, ts, isInHole, isStuckOnGround } = eventualPosition;
     ctx.db.patch(ball._id, {
       x,
       y,
@@ -231,6 +235,8 @@ export const updateBall = internalMutation(
       dx: 0,
       dy: 0,
       updates: ball.updates + 1,
+      grounded: isStuckOnGround,
+      finished: isInHole,
     });
   }
 );

@@ -105,6 +105,7 @@ export const Ground = ({
   ];
   const polyPoints = (
     <polygon
+      key="polyPoints"
       points={points.map(({ x, y }) => `${x},${yMax - y + yMin}`).join(" ")}
       fill={ground}
     />
@@ -172,7 +173,7 @@ export const Balls = React.memo(() => {
               {b.name}
             </text>
             <circle
-              key={b._id}
+              key={b._id + "-circle"}
               cx={x}
               cy={yMax - y}
               r={radius - 2}
@@ -186,6 +187,7 @@ export const Balls = React.memo(() => {
     </>
   );
 });
+Balls.displayName = "Balls";
 
 export const Controls = ({
   mousePos,
