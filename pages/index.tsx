@@ -5,31 +5,15 @@ import styles from "../styles/Home.module.css";
 
 const Home: NextPage = () => {
   return (
-    <div className={styles.container} style={{ userSelect: "none" }}>
+    <div
+      className={styles.container}
+      style={{ userSelect: "none", overflow: "hidden" }}
+    >
       <Head>
         <title>It's like ManyGolf</title>
         <meta name="description" content="Multiplayer side-view golf game" />
       </Head>
-      <main
-        style={{
-          width: "100vw",
-          height: "100vh",
-          display: "inline-flex",
-          flexDirection: "column",
-          overflow: "none",
-        }}
-      >
-        <div
-          className="debug"
-          style={{
-            position: "absolute",
-            backgroundColor: " rgba(0, 0, 0, 0.2)",
-            pointerEvents: "none",
-            color: "white",
-            overflow: "scroll",
-            maxHeight: "100vh",
-          }}
-        ></div>
+      <main>
         <Game />
       </main>
     </div>

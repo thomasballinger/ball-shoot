@@ -4,9 +4,9 @@ declare global {
   }
 }
 
-import React, { ChangeEvent, useEffect, useRef, useState } from "react";
+import React, { ChangeEvent, useEffect, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { useDebug, useDimensions } from "./hooks";
+import { useDebug } from "./hooks";
 import { api } from "./convex/_generated/api";
 import {
   currentPosition,
@@ -23,30 +23,84 @@ import { useGameplay } from "./useGameplay";
 import { ground } from "./style";
 import { Scoreboard } from "./score";
 
+function Debug() {
+  return (
+    <div
+      className="debug"
+      style={{
+        position: "absolute",
+        backgroundColor: " rgba(0, 0, 0, 0.2)",
+        pointerEvents: "none",
+        color: "white",
+        overflow: "scroll",
+        maxHeight: "100vh",
+      }}
+    ></div>
+  );
+}
+
+function InfoOverlay() {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        display: "flex",
+        flexDirection: "row",
+        pointerEvents: "none",
+        overflow: "hidden",
+        maxHeight: "100%",
+        marginTop: 20,
+      }}
+    >
+      <Scoreboard />
+    </div>
+  );
+}
+
+function ControlsOverlay({
+  setName,
+  nextLevel,
+}: {
+  setName: (name: string) => Promise<any>;
+  nextLevel: () => void;
+}) {
+  return (
+    <div>
+      <input
+        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+          setName(e.currentTarget.value);
+        }}
+      />
+      <button onClick={() => nextLevel()}>new level</button>
+    </div>
+  );
+}
+
 // takes up the whole screen
 export const Game = () => {
   const [mouseDown, setMouseDown] = useState(false);
-  const { onMouseOrTouchMove, fire, mousePos, ballPos, strokes, setName } =
-    useGameplay();
+  const {
+    onMouseOrTouchMove,
+    fire,
+    mousePos,
+    ballPos,
+    strokes,
+    setName,
+  } = useGameplay();
   const nextLevel = useMutation(api.golf.createLevel);
   return (
-    <>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          backgroundColor: "lightgray",
-        }}
-      >
-        <div>strokes: {strokes}</div>
-        <Scoreboard />
-        <input
-          onChange={(e: ChangeEvent<HTMLInputElement>) => {
-            setName(e.currentTarget.value);
-          }}
-        />
-        <button onClick={() => nextLevel()}>new level</button>
-      </div>
+    <div
+      style={{
+        width: "100vw",
+        height: "100dvh",
+        display: "inline-flex",
+        flexDirection: "column",
+        overflow: "none",
+      }}
+    >
+      <Debug />
+      <InfoOverlay />
+      <ControlsOverlay nextLevel={() => nextLevel()} setName={setName} />
       <svg
         style={{
           aspectRatio: `${xMax - xMin} / ${yMax - yMin}`,
@@ -71,7 +125,7 @@ export const Game = () => {
         <Controls mousePos={mousePos} ballPos={ballPos} mouseDown={mouseDown} />
       </svg>
       <div style={{ backgroundColor: ground, flexGrow: 1 }}></div>
-    </>
+    </div>
   );
 };
 
