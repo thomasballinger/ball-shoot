@@ -14,7 +14,7 @@ import {
 import { DataModel, Doc, Id, TableNames } from "./_generated/dataModel";
 import { v } from "convex/values";
 import { QueryCtx } from "convex/server";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 
 export const setName = mutation({
   args: { name: v.string(), identifier: v.string() },
@@ -109,7 +109,8 @@ export const createBall = mutation({
       .filter((q) => q.eq(q.field("identifier"), identifier))
       .collect();
     await Promise.all(curBalls.map(({ _id }) => db.delete(_id)));
-    return await db.insert("balls", {
+
+    const ball = {
       x: 10 + Math.random() * 200,
       y: xMin + ((xMax - xMin) * (1 + Math.random())) / 2,
       dx: 0,
@@ -122,7 +123,14 @@ export const createBall = mutation({
       updates: 0,
       finished: false,
       grounded: false,
+    };
+    const id = await db.insert("balls", ball);
+    const eventualPosition = currentPosition(ball, Infinity, curLevel);
+    ctx.scheduler.runAt(eventualPosition.ts, internal.golf.updateBall, {
+      ballId: id,
+      lastUpdate: 0,
     });
+    return id;
   },
 });
 

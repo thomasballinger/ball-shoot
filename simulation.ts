@@ -11,6 +11,11 @@ export type Ball = {
   ts: number;
 };
 
+type BallWithIdentity = Ball & {
+  _id: string;
+  updates: number;
+};
+
 export type Level = {
   domain: number[];
   elevation: number[];
@@ -165,6 +170,8 @@ export function getRelevantLand(
   return lineSegments;
 }
 
+const dt = 10;
+
 export function restingPosition(
   ball: Ball,
   level: Level = {
@@ -176,9 +183,23 @@ export function restingPosition(
   return currentPosition(ball, Infinity, level);
 }
 
-// TODO add memoization
+// Time never flows backwards, so the thing to cache is always the last time before now.
+// Or infinity, that could be useful too.
+const memory: Map<
+  string,
+  BallWithIdentity & { isInHole: boolean; isStuckOnGround: boolean }
+> = new Map();
+if (typeof window !== "undefined") {
+  (window as any).memory = memory;
+}
+
 export function currentPosition(
-  ball: Ball,
+  ball: Ball & {
+    _id?: string;
+    updates?: number;
+    grounded?: boolean;
+    finished?: boolean;
+  },
   now: number,
   level: Level = {
     domain: [xMin, xMax],
@@ -195,14 +216,35 @@ export function currentPosition(
   if (ball.ts >= now)
     return { ...ball, isInHole: false, isStuckOnGround: false };
 
+  if (ball.finished) return { ...ball, isInHole: true, isStuckOnGround: true };
+  if (ball.grounded) return { ...ball, isInHole: false, isStuckOnGround: true };
+
   let newBall = ball;
+
+  if (ball._id && typeof ball.updates === "number") {
+    const saved = memory.get(ball._id);
+    if (saved && ball.updates === saved.updates) {
+      if (saved.ts > now) {
+        console.log("saved:", saved);
+        console.log("ball:", ball);
+        console.warn("saved state has larger ts than current time (?)");
+      }
+      const { x, y, dx, dy, ts, isInHole, isStuckOnGround } = saved;
+      if (ts > now) {
+        console.log("CACHE HIT: ran no steps");
+        return { x, y, ts, isInHole, isStuckOnGround };
+      }
+      newBall = { x, y, ts, dx, dy };
+    }
+  }
+
   let i = 0;
 
   // infinite loops are annoying, give up after 1000 steps
   while (i++ < 1000) {
     // step always returns a new ball object
     const prev = newBall;
-    newBall = step(newBall, 10);
+    newBall = step(newBall, dt);
 
     // TODO check if line betwen previous position and new position crosses *through* any of them
     let toClosest = Infinity;
@@ -224,7 +266,7 @@ export function currentPosition(
 
     if (toClosest < radius) {
       const { dx, dy } = bounce(newBall, closestObj!);
-      newBall = { ...prev, dx: dx * 0.8, dy: dy * 0.8 };
+      newBall = { ...prev, dx: dx * 0.76, dy: dy * 0.76 };
     }
 
     if (
@@ -232,16 +274,26 @@ export function currentPosition(
       Math.abs(newBall.dy * newBall.dy + newBall.dx * newBall.dx) < 1
     ) {
       // stuck on ground
-      return {
+      const ret = {
         ...newBall,
         isStuckOnGround: true,
         isInHole: level.hole.x1 < ball.x && ball.x < level.hole.x2,
       };
+      if (ball._id && typeof ball.updates === "number") {
+        memory.set(ball._id, { ...ret, _id: ball._id, updates: ball.updates });
+      }
+      console.log("had to run", i, "steps for", ball);
+      return ret;
     }
 
     if (newBall.ts > now) {
       // we have reached the present
-      return { ...newBall, isInHole: false, isStuckOnGround: false };
+      const ret = { ...newBall, isInHole: false, isStuckOnGround: false };
+      if (ball._id && typeof ball.updates === "number") {
+        memory.set(ball._id, { ...ret, _id: ball._id, updates: ball.updates });
+      }
+      console.log("had to run", i, "steps for", ball);
+      return ret;
     }
   }
   // ran out of simulation steps
