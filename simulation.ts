@@ -170,7 +170,8 @@ export function getRelevantLand(
   return lineSegments;
 }
 
-const dt = 10;
+// let 120FPS macbooks look smooth
+const dt = 8.333;
 
 export function restingPosition(
   ball: Ball,
@@ -224,14 +225,16 @@ export function currentPosition(
   if (ball._id && typeof ball.updates === "number") {
     const saved = memory.get(ball._id);
     if (saved && ball.updates === saved.updates) {
-      if (saved.ts > now) {
+      if (saved.ts > now + dt) {
         console.log("saved:", saved);
         console.log("ball:", ball);
-        console.warn("saved state has larger ts than current time (?)");
+        console.warn(
+          "saved state has larger ts than current time + dt (?)",
+          saved.ts - now
+        );
       }
       const { x, y, dx, dy, ts, isInHole, isStuckOnGround } = saved;
       if (ts > now) {
-        console.log("CACHE HIT: ran no steps");
         return { x, y, ts, isInHole, isStuckOnGround };
       }
       newBall = { x, y, ts, dx, dy };
@@ -271,18 +274,23 @@ export function currentPosition(
 
     if (
       toClosest < radius &&
-      Math.abs(newBall.dy * newBall.dy + newBall.dx * newBall.dx) < 1
+      Math.abs(newBall.dy * newBall.dy + newBall.dx * newBall.dx) < 0.6
     ) {
       // stuck on ground
       const ret = {
         ...newBall,
+        dx: 0,
+        dy: 0,
         isStuckOnGround: true,
         isInHole: level.hole.x1 < ball.x && ball.x < level.hole.x2,
       };
       if (ball._id && typeof ball.updates === "number") {
         memory.set(ball._id, { ...ret, _id: ball._id, updates: ball.updates });
       }
-      console.log("had to run", i, "steps for", ball);
+      // only log on the server
+      if (typeof window === "undefined") {
+        console.log("had to run", i, "steps to ground", ball, "to", ret);
+      }
       return ret;
     }
 
@@ -292,11 +300,14 @@ export function currentPosition(
       if (ball._id && typeof ball.updates === "number") {
         memory.set(ball._id, { ...ret, _id: ball._id, updates: ball.updates });
       }
-      console.log("had to run", i, "steps for", ball);
       return ret;
     }
   }
   // ran out of simulation steps
+  // only log on the server
+  if (typeof window === "undefined") {
+    console.log("ran out of simulation steps for", ball);
+  }
   return { ...newBall, isInHole: false, isStuckOnGround: false };
 }
 
