@@ -16,7 +16,8 @@ export default defineSchema({
     dy: v.number(),
     identifier: v.string(), // secret access token that allows strokes
     color: v.string(),
-    strokes: v.number(),
+    strokes: v.number(), // how many int
+    updates: v.number(), // setting a ball to resting counts as an update but not a stroke
     name: v.optional(v.string()),
     level: v.id("levels"),
     grounded: v.optional(v.boolean()),

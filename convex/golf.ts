@@ -11,8 +11,10 @@ import {
   DatabaseReader,
   internalMutation,
 } from "./_generated/server";
-import { Doc, Id } from "./_generated/dataModel";
+import { DataModel, Doc, Id, TableNames } from "./_generated/dataModel";
 import { v } from "convex/values";
+import { MutationCtx, QueryCtx } from "convex/server";
+import { internal } from "./_generated/api";
 
 export const setName = mutation({
   args: { name: v.string(), identifier: v.string() },
@@ -117,6 +119,7 @@ export const createBall = mutation({
       identifier,
       level: curLevel?._id,
       strokes: 0,
+      updates: 0,
     });
   },
 });
@@ -141,7 +144,10 @@ export const publishStroke = mutation({
     angleInDegrees: v.number(),
     mightiness: v.number(),
   },
-  handler: async ({ db }, { identifier, angleInDegrees, mightiness }) => {
+  handler: async (
+    { db, scheduler },
+    { identifier, angleInDegrees, mightiness }
+  ) => {
     const ball = await db
       .query("balls")
       .filter((q) => q.eq(q.field("identifier"), identifier))
@@ -156,6 +162,7 @@ export const publishStroke = mutation({
       throw new Error("You can't hit the ball that hard!");
     }
     const level = await currentLevel({ db });
+    if (!level) throw new Error("no current level");
 
     let [dx, dy] = degreesToVector(angleInDegrees);
     dx *= mightiness;
@@ -172,18 +179,73 @@ export const publishStroke = mutation({
       dy,
       ts: Date.now() + DELAY,
       strokes: ball.strokes + 1,
+      updates: ball.updates + 1,
     };
 
     db.replace(ball._id, newBall);
+
+    const eventualPosition = currentPosition(newBall, Infinity, level);
+    scheduler.runAt(eventualPosition.ts, internal.golf.updateBall, {
+      ballId: newBall._id,
+      lastUpdate: newBall.updates,
+    });
   },
 });
 
+/** Once the ball has come to rest, update
+ * This causes the state state queries to update and is friendlier to clients,
+ * which no longer need to run simulation steps to place the ball.
+ */
 export const updateBall = internalMutation(
-  async (ctx, { ballId }: { ballId: Id<"balls"> }) => {
+  async (
+    ctxOrig,
+    { ballId, lastUpdate }: { ballId: Id<"balls">; lastUpdate: number }
+  ) => {
+    // TODO check to see if the last stoke number
+    const ctx = augment(ctxOrig);
     const ball = await ctx.db.get(ballId)!;
     if (!ball) throw new Error("bad id " + ballId);
-    const level = await ctx.db.get(ball.level);
-
-    // TODO
+    if (lastUpdate !== ball.updates) {
+      // another stroke acted on this ball in the meantime, this scheduled update is bad
+      console.log(
+        "not updating because last update:",
+        lastUpdate,
+        "current update",
+        ball.updates
+      );
+      return;
+    }
+    const level = await ctx.db.getOrThrow(ball.level);
+    const eventualPosition = currentPosition(ball, Infinity, level);
+    if (!eventualPosition.isStuckOnGround) {
+      // TODO if this happens, just drop the ball right there in the simulation.
+      // A good property of a simulation is that is runs predictably, sacrificing
+      // accuracy.
+      throw new Error("Simulation took too many steps, ball didn't stop");
+    }
+    const { x, y, ts } = eventualPosition;
+    ctx.db.patch(ball._id, {
+      x,
+      y,
+      ts,
+      dx: 0,
+      dy: 0,
+      updates: ball.updates + 1,
+    });
   }
 );
+// TODO update are separate from strokes
+
+function augment<T extends QueryCtx<DataModel>>(ctx: T) {
+  return {
+    ...ctx,
+    db: {
+      ...ctx.db,
+      async getOrThrow<TableName extends TableNames>(id: Id<TableName>) {
+        const x = await ctx.db.get(id);
+        if (!x) throw new Error("No record exists with id " + id);
+        return x;
+      },
+    },
+  };
+}

@@ -185,7 +185,13 @@ export function currentPosition(
     elevation: [yMin, yMin],
     hole: { x1: -10000, x2: -10000 },
   }
-): { x: number; y: number; isInHole: boolean; isStuckOnGround: boolean } {
+): {
+  x: number;
+  y: number;
+  ts: number;
+  isInHole: boolean;
+  isStuckOnGround: boolean;
+} {
   if (ball.ts >= now)
     return { ...ball, isInHole: false, isStuckOnGround: false };
 
