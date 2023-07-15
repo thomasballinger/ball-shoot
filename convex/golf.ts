@@ -13,7 +13,7 @@ import {
 } from "./_generated/server";
 import { DataModel, Doc, Id, TableNames } from "./_generated/dataModel";
 import { v } from "convex/values";
-import { MutationCtx, QueryCtx } from "convex/server";
+import { QueryCtx } from "convex/server";
 import { internal } from "./_generated/api";
 
 export const setName = mutation({
@@ -136,9 +136,11 @@ export const getBall = query(
   }
 );
 
-export const getLevel = query(({ db }): Promise<Doc<"levels"> | null> => {
-  return currentLevel({ db });
-});
+export const getLevel = query(
+  ({ db }): Promise<Doc<"levels"> | null> => {
+    return currentLevel({ db });
+  }
+);
 
 export const publishStroke = mutation({
   args: {

@@ -1,12 +1,14 @@
 import { cronJobs } from "convex/server";
 import { internalMutation } from "./_generated/server";
 import { api, internal } from "./_generated/api";
-import { createBall, setName } from "./golf";
+import { createBall, getBalls, setName } from "./golf";
 
 export const cpuMove = internalMutation(async (ctx) => {
   const num = Math.ceil(Math.random() * 100);
   const identifier = "secretCPU-" + num;
-  const ballId = await createBall(ctx, { color: "red", identifier });
+  const balls = await getBalls(ctx, {});
+  if (balls.length >= 4) return;
+  await createBall(ctx, { color: "red", identifier });
   await setName(ctx, {
     name: "CPU " + num,
     identifier,
