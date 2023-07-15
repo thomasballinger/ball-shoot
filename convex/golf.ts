@@ -14,7 +14,7 @@ import {
 import { DataModel, Doc, Id, TableNames } from "./_generated/dataModel";
 import { v } from "convex/values";
 import { QueryCtx } from "convex/server";
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 
 export const setName = mutation({
   args: { name: v.string(), identifier: v.string() },
@@ -57,7 +57,7 @@ function currentLevel({
 }
 
 // The minimum amount of time before a new level can be created
-const ROUND_LENGTH = 10000;
+const ROUND_LENGTH = 20000;
 
 async function ballsForLevel(db: DatabaseReader, levelId: Id<"levels">) {
   const balls = await db
@@ -67,20 +67,24 @@ async function ballsForLevel(db: DatabaseReader, levelId: Id<"levels">) {
   return balls;
 }
 
+export function canGoToNextLevel(
+  now: number,
+  balls: Doc<"balls">[],
+  level: Doc<"levels">
+) {
+  const timeUp = now - level.started > ROUND_LENGTH;
+  const oneIn = balls.some((x) => x.finished);
+  return timeUp || oneIn;
+}
+
 export const createLevel = mutation(
   async ({ db }): Promise<Doc<"levels"> | null> => {
     const curLevel = await currentLevel({ db });
     if (curLevel) {
       const now = Date.now();
-      const timeUp = now - curLevel.started > ROUND_LENGTH;
       const balls = await ballsForLevel(db, curLevel._id);
-      if (!timeUp) {
-        const inHoles = balls.map(
-          (b) => currentPosition(b, now, curLevel).isInHole
-        );
-        const oneIn = inHoles.some((x) => x);
-        const allIn = inHoles.every((x) => x);
-        if (!allIn) return null;
+      if (!canGoToNextLevel(now, balls, curLevel)) {
+        return null;
       }
     }
     const id = await db.insert("levels", {

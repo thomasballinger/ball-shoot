@@ -62,7 +62,7 @@ function ControlsOverlay({
   nextLevel,
 }: {
   setName: (name: string) => Promise<any>;
-  nextLevel: () => void;
+  nextLevel?: () => void;
 }) {
   return (
     <div>
@@ -71,7 +71,9 @@ function ControlsOverlay({
           setName(e.currentTarget.value);
         }}
       />
-      <button onClick={() => nextLevel()}>new level</button>
+      <button onClick={nextLevel && (() => nextLevel())} disabled={!nextLevel}>
+        new level
+      </button>
     </div>
   );
 }
@@ -86,8 +88,8 @@ export const Game = () => {
     ballPos,
     strokes,
     setName,
+    nextLevel,
   } = useGameplay();
-  const nextLevel = useMutation(api.golf.createLevel);
   return (
     <div
       style={{
@@ -144,7 +146,8 @@ export const Ground = ({
     <line
       key={"ground" + i}
       stroke={"green"}
-      strokeWidth={1}
+      strokeWidth={2}
+      strokeLinecap="round"
       x1={x1}
       y1={yMax - y1 + yMin}
       x2={x2}
@@ -186,9 +189,9 @@ export const Ground = ({
     : [];
   return (
     <>
-      {lines}
       {fatLines}
       {polyPoints}
+      {lines}
     </>
   );
 };

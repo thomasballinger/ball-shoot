@@ -13,6 +13,7 @@ export function useGameplay(): {
   mousePos: { x: number; y: number } | undefined;
   setName: (name: string) => Promise<null>;
   strokes: number;
+  nextLevel: () => Promise<any>;
 } {
   const [mousePos, setMousePos] = useState<
     { x: number; y: number } | undefined
@@ -65,6 +66,8 @@ export function useGameplay(): {
     });
     return () => cancelAnimationFrame(handle);
   });
+  // TODO do we really have to run this every render?
+  // apparently (cursor line disappears if not) but is that a bug?
 
   const publish = useMutation(api.golf.publishStroke);
 
@@ -88,6 +91,11 @@ export function useGameplay(): {
   const setName = (name: string) =>
     _setName({ identifier: identifier.current, name });
 
+  // TODO remove this when not canGoToNextLevel()
+  // this requires a timer or (better>?) a useQuery()
+  // or (better? another field on levels and a scheduled mutation to update the field)
+  const nextLevel = useMutation(api.golf.createLevel);
+
   return {
     onMouseOrTouchMove,
     fire,
@@ -95,5 +103,6 @@ export function useGameplay(): {
     mousePos,
     strokes: ball ? ball.strokes : 0,
     setName,
+    nextLevel,
   };
 }
