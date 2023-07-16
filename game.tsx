@@ -5,7 +5,7 @@ declare global {
 }
 
 import React, { ChangeEvent, useEffect, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { useDebug } from "./hooks";
 import { api } from "./convex/_generated/api";
 import {
@@ -18,6 +18,8 @@ import {
   radius,
   getRelevantLand,
   pointToLine,
+  xExtent,
+  yExtent,
 } from "./simulation";
 import { useGameplay } from "./useGameplay";
 import { ground } from "./style";
@@ -60,16 +62,20 @@ function InfoOverlay() {
 function ControlsOverlay({
   setName,
   nextLevel,
+  name,
 }: {
   setName: (name: string) => Promise<any>;
   nextLevel?: () => void;
+  name: string;
 }) {
   return (
     <div>
       <input
+        placeholder="change your name"
         onChange={(e: ChangeEvent<HTMLInputElement>) => {
           setName(e.currentTarget.value);
         }}
+        defaultValue={name}
       />
       <button onClick={nextLevel && (() => nextLevel())} disabled={!nextLevel}>
         new level
@@ -89,6 +95,8 @@ export const Game = () => {
     strokes,
     setName,
     nextLevel,
+    wonMessage,
+    name,
   } = useGameplay();
   return (
     <div
@@ -102,7 +110,11 @@ export const Game = () => {
     >
       <Debug />
       <InfoOverlay />
-      <ControlsOverlay nextLevel={() => nextLevel()} setName={setName} />
+      <ControlsOverlay
+        nextLevel={() => nextLevel()}
+        setName={setName}
+        name={name}
+      />
       <svg
         style={{
           aspectRatio: `${xMax - xMin} / ${yMax - yMin}`,
@@ -125,11 +137,58 @@ export const Game = () => {
         <Ground ballPos={ballPos} />
         <Balls />
         <Controls mousePos={mousePos} ballPos={ballPos} mouseDown={mouseDown} />
+        <CenteredMessage message={wonMessage} />
       </svg>
       <div style={{ backgroundColor: ground, flexGrow: 1 }}></div>
     </div>
   );
 };
+
+function CenteredMessage({ message }: { message?: string }) {
+  const shared = {
+    textAnchor: "middle",
+    dominantBaseline: "middle",
+    fontSize: 144,
+    x: xMin + xExtent / 2,
+    y: yMin + yExtent / 3,
+  };
+  return (
+    <g>
+      <defs>
+        <filter id="bigBlur" x="0" y="0">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="2" />
+        </filter>
+      </defs>
+      <text
+        style={{ transition: "all 1s ease-out" }}
+        key={"winMessageBg"}
+        {...shared}
+        fill={"black"}
+        opacity={message ? 1 : 0}
+        filter="url(#bigBlur)"
+      >
+        {message}
+      </text>
+      <text
+        key={"winMessageBg2"}
+        {...shared}
+        opacity={message ? 1 : 0}
+        fill="lightblue"
+      >
+        {message}
+      </text>
+      <text
+        style={{ transition: "all 200ms ease-out" }}
+        key={"winMessage"}
+        {...shared}
+        opacity={message ? 1 : 0}
+        fill="white"
+      >
+        {message}
+      </text>
+    </g>
+  );
+}
 
 export const Ground = ({
   ballPos,
@@ -217,7 +276,7 @@ export const Balls = React.memo(() => {
   useDebug({ _, pos });
 
   return (
-    <>
+    <g key="balls-section">
       {balls.map((b) => {
         const { x, y, isInHole, isStuckOnGround } = currentPosition(
           b,
@@ -225,8 +284,33 @@ export const Balls = React.memo(() => {
           level
         );
         return (
-          <>
-            <text key={b._id + "-name"} x={x} y={yMax - y - 15} fill="white">
+          <g key={b._id + "-group"}>
+            <defs>
+              <filter id="blur" x="0" y="0">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="1" />
+              </filter>
+            </defs>
+            <text
+              key={b._id + "-name-bg"}
+              x={x}
+              y={yMax - y - 20}
+              fill="black"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize={12}
+              filter="url(#blur)"
+            >
+              {b.name}
+            </text>
+            <text
+              key={b._id + "-name"}
+              x={x}
+              y={yMax - y - 20}
+              fill="white"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize={12}
+            >
               {b.name}
             </text>
             <circle
@@ -238,10 +322,10 @@ export const Balls = React.memo(() => {
               stroke={b.color}
               fill={"white"}
             />
-          </>
+          </g>
         );
       })}
-    </>
+    </g>
   );
 });
 Balls.displayName = "Balls";

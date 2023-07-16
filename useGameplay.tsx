@@ -4,6 +4,28 @@ import { useMutation, useQuery } from "convex/react";
 import { currentPosition, xMax, xMin, yMax, yMin } from "./simulation";
 import { api } from "./convex/_generated/api";
 
+function randomName() {
+  const names = [
+    `Freddy Allstar`,
+    `Chip "Slice" McDivot`,
+    `Sandy "Bunker" Bottoms`,
+    `Bogey "Mulligan" Johnson`,
+    `Tee "Off" Thompson`,
+    `Albatross "Eagle" Featherstone`,
+    `Birdie "Putt" Parson`,
+    `Putter "Whacker" Wilson`,
+    `Fairway "Duffer" Davis`,
+    `Ace "Golfzilla" Anderson`,
+    `Caddy "Clubber" Clarkson`,
+    `Slice "Hook" Hamilton`,
+    `Fore "Bogeyman" Barclay`,
+    `Mulligan "Putter" Peterson`,
+    `Shank "Swing" Sullivan`,
+    `Dimples "Chipper" Chandler`,
+  ];
+  return names[Math.floor(Math.random() * names.length)];
+}
+
 export function useGameplay(): {
   onMouseOrTouchMove: (
     e: React.MouseEvent<SVGSVGElement> | React.TouchEvent<SVGSVGElement>
@@ -14,10 +36,15 @@ export function useGameplay(): {
   setName: (name: string) => Promise<null>;
   strokes: number;
   nextLevel: () => Promise<any>;
+  wonMessage?: string;
+  name: string;
 } {
   const [mousePos, setMousePos] = useState<
     { x: number; y: number } | undefined
   >();
+  const [name, setNameLocally] = useState(randomName());
+  const nameRef = useRef<string>();
+  nameRef.current = name;
 
   const createBall = useMutation(api.golf.createBall);
   const identifier = useRef<string>("secret:" + Math.random());
@@ -49,6 +76,7 @@ export function useGameplay(): {
       const id = await createBall({
         identifier: identifier.current,
         color: color.current,
+        name: nameRef.current,
       });
       setMyBallId(id);
     }
@@ -87,9 +115,11 @@ export function useGameplay(): {
     publish({ identifier: identifier.current, angleInDegrees, mightiness });
   };
 
-  const _setName = useMutation(api.golf.setName);
-  const setName = (name: string) =>
-    _setName({ identifier: identifier.current, name });
+  const setNameRemotely = useMutation(api.golf.setName);
+  const setName = (name: string) => {
+    setNameLocally(name);
+    return setNameRemotely({ identifier: identifier.current, name });
+  };
 
   // TODO remove this when not canGoToNextLevel()
   // this requires a timer or (better>?) a useQuery()
@@ -104,5 +134,7 @@ export function useGameplay(): {
     strokes: ball ? ball.strokes : 0,
     setName,
     nextLevel,
+    wonMessage: ball?.finished ? `Hole in ${ball?.strokes}` : undefined,
+    name,
   };
 }

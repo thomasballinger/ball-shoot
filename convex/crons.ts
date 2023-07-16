@@ -42,6 +42,27 @@ export const createCpu = internalMutation(async (ctx) => {
     "tomato",
   ];
   const color = cpuColor[Math.floor(Math.random() * cpuColor.length)];
+
+  const names = [
+    `Freddy Allstar`,
+    `Chip "Slice" McDivot`,
+    `Sandy "Bunker" Bottoms`,
+    `Bogey "Mulligan" Johnson`,
+    `Tee "Off" Thompson`,
+    `Albatross "Eagle" Featherstone`,
+    `Birdie "Putt" Parson`,
+    `Putter "Whacker" Wilson`,
+    `Fairway "Duffer" Davis`,
+    `Ace "Golfzilla" Anderson`,
+    `Caddy "Clubber" Clarkson`,
+    `Slice "Hook" Hamilton`,
+    `Fore "Bogeyman" Barclay`,
+    `Mulligan "Putter" Peterson`,
+    `Shank "Swing" Sullivan`,
+    `Dimples "Chipper" Chandler`,
+  ];
+  const name = names[Math.floor(Math.random() * names.length)];
+
   await createBall(ctx, { color, identifier });
   await setName(ctx, {
     name: "CPU " + num,

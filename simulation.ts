@@ -1,7 +1,7 @@
-export const [xMin, xMax, yMin, yMax] = [0, 1200, 0, 600];
-export const radius = 6;
-const xExtent = xMax - xMin;
-const yExtent = yMax - yMin;
+export const [xMin, xMax, yMin, yMax] = [0, 1200, 0, 800];
+export const radius = 7;
+export const xExtent = xMax - xMin;
+export const yExtent = yMax - yMin;
 
 export type Ball = {
   x: number;
@@ -73,10 +73,12 @@ export function generateLevel(): Level {
     );
     hole = { x1: domain[holeIndex + 1], x2: domain[holeIndex + 4] };
 
-    // bump everything up a bit
+    // bump everything up a bit for the hole
     elevations.forEach((e, i, arr) => {
       arr[i] = (e / (yExtent + radius * 3)) * yExtent + radius * 3;
     });
+
+    // TODO build relevant
   }
 
   return {
@@ -251,14 +253,14 @@ export function currentPosition(
 
     // TODO check if line betwen previous position and new position crosses *through* any of them
     let toClosest = Infinity;
-    let closestObj:
-      | { x1: number; y1: number; x2: number; y2: number }
-      | { x: number; y: number };
     const lines = getRelevantLand(
       newBall.x - radius,
       newBall.x + radius,
       level
     );
+    let closestObj:
+      | { x1: number; y1: number; x2: number; y2: number }
+      | { x: number; y: number } = lines[0];
     for (const line of lines) {
       const [pointOrLine, dist] = pointFromLineSegment(newBall, line);
       if (dist < toClosest) {
@@ -268,30 +270,51 @@ export function currentPosition(
     }
 
     if (toClosest < radius) {
-      const { dx, dy } = bounce(newBall, closestObj!);
-      newBall = { ...prev, dx: dx * 0.76, dy: dy * 0.76 };
+      const portionNormalLost = 0.9;
+      const { dx, dy } = bounce(newBall, closestObj!, portionNormalLost);
+      // there's also some total loss
+      newBall = { ...prev, dx: dx * 0.95, dy: dy * 0.95 };
     }
 
-    if (
-      toClosest < radius &&
-      Math.abs(newBall.dy * newBall.dy + newBall.dx * newBall.dx) < 0.6
-    ) {
-      // stuck on ground
-      const ret = {
-        ...newBall,
-        dx: 0,
-        dy: 0,
-        isStuckOnGround: true,
-        isInHole: level.hole.x1 < ball.x && ball.x < level.hole.x2,
-      };
-      if (ball._id && typeof ball.updates === "number") {
-        memory.set(ball._id, { ...ret, _id: ball._id, updates: ball.updates });
+    if (toClosest < radius) {
+      let isStuckOnGround = false;
+
+      // steeper slopes require slower speed to stop
+      if ("x2" in closestObj) {
+        const [xPortion] = normalize(
+          closestObj.x2 - closestObj.x1,
+          closestObj.y2 - closestObj.y1
+        );
+        const threshold = Math.max(0.01, xPortion) * 0.8;
+        isStuckOnGround =
+          Math.abs(newBall.dy * newBall.dy + newBall.dx * newBall.dx) <
+          threshold ** 2;
+      } else {
+        isStuckOnGround = false;
       }
-      // only log on the server
-      if (typeof window === "undefined") {
-        console.log("had to run", i, "steps to ground", ball, "to", ret);
+
+      if (isStuckOnGround) {
+        // stuck on ground
+        const ret = {
+          ...newBall,
+          dx: 0,
+          dy: 0,
+          isStuckOnGround: true,
+          isInHole: level.hole.x1 < newBall.x && newBall.x < level.hole.x2,
+        };
+        if (ball._id && typeof ball.updates === "number") {
+          memory.set(ball._id, {
+            ...ret,
+            _id: ball._id,
+            updates: ball.updates,
+          });
+        }
+        // only log on the server
+        if (typeof window === "undefined") {
+          console.log("had to run", i, "steps to ground", ball, "to", ret);
+        }
+        return ret;
       }
-      return ret;
     }
 
     if (newBall.ts > now) {
@@ -350,11 +373,13 @@ export function pointToLine(
   return Math.sqrt(dx * dx + dy * dy);
 }
 
+/** Bounce off a line or point, losing some momentum in the normal direction. */
 function bounce(
   { x, y, dx, dy }: { x: number; y: number; dx: number; dy: number },
   lineOrPoint:
     | { x1: number; y1: number; x2: number; y2: number }
-    | { x: number; y: number }
+    | { x: number; y: number },
+  lossFactor: number = 0.9
 ) {
   var normal;
   if ("x" in lineOrPoint) {
@@ -367,11 +392,15 @@ function bounce(
     var yDiff = line.y2 - line.y1;
     normal = normalize(-yDiff, xDiff);
   }
+  // this is the portion normal - we want it all!
   const dot = dx * normal[0] + dy * normal[1];
   const reflected = {
-    dx: dx - 2 * dot * normal[0],
-    dy: dy - 2 * dot * normal[1],
+    dx: dx - lossFactor * 2 * dot * normal[0],
+    dy: dy - lossFactor * 2 * dot * normal[1],
   };
+
+  // Now project reflected onto the normal and the
+
   return reflected;
 }
 

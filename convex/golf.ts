@@ -96,8 +96,12 @@ export const createLevel = mutation(
 );
 
 export const createBall = mutation({
-  args: { identifier: v.string(), color: v.string() },
-  handler: async (ctx, { identifier, color }): Promise<Id<"balls">> => {
+  args: {
+    identifier: v.string(),
+    color: v.string(),
+    name: v.optional(v.string()),
+  },
+  handler: async (ctx, { identifier, color, name }): Promise<Id<"balls">> => {
     const { db } = ctx;
     // fails if there's no level? ick, what do we do here?
     let curLevel = await currentLevel(ctx);
@@ -114,7 +118,7 @@ export const createBall = mutation({
       .collect();
     await Promise.all(curBalls.map(({ _id }) => db.delete(_id)));
 
-    const ball = {
+    const ball: Omit<Doc<"balls">, "_id" | "_creationTime"> = {
       x: 10 + Math.random() * 200,
       y: xMin + ((xMax - xMin) * (1 + Math.random())) / 2,
       dx: 0,
@@ -128,6 +132,9 @@ export const createBall = mutation({
       finished: false,
       grounded: false,
     };
+    if (name) {
+      ball.name = name;
+    }
     const id = await db.insert("balls", ball);
     const eventualPosition = currentPosition(ball, Infinity, curLevel);
     ctx.scheduler.runAt(eventualPosition.ts, internal.golf.updateBall, {
@@ -148,11 +155,9 @@ export const getBall = query(
   }
 );
 
-export const getLevel = query(
-  ({ db }): Promise<Doc<"levels"> | null> => {
-    return currentLevel({ db });
-  }
-);
+export const getLevel = query(({ db }): Promise<Doc<"levels"> | null> => {
+  return currentLevel({ db });
+});
 
 export const publishStroke = mutation({
   args: {
