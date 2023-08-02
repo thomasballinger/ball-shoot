@@ -205,7 +205,7 @@ export const publishStroke = mutation({
       grounded: false,
     };
 
-    db.replace(ball._id, newBall);
+    await db.replace(ball._id, newBall);
 
     const eventualPosition = currentPosition(newBall, Infinity, level);
     scheduler.runAt(eventualPosition.ts, internal.golf.updateBall, {
@@ -247,7 +247,7 @@ export const updateBall = internalMutation(
       throw new Error("Simulation took too many steps, ball didn't stop");
     }
     const { x, y, ts, isInHole, isStuckOnGround } = eventualPosition;
-    ctx.db.patch(ball._id, {
+    await ctx.db.patch(ball._id, {
       x,
       y,
       ts,

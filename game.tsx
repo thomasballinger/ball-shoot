@@ -92,7 +92,6 @@ export const Game = () => {
     fire,
     mousePos,
     ballPos,
-    strokes,
     setName,
     nextLevel,
     wonMessage,
@@ -271,10 +270,7 @@ export const Balls = React.memo(() => {
 
   const now = Date.now();
 
-  const pos = balls.map((b) => currentPosition(b, now, level));
-
-  useDebug({ _, pos });
-
+  // TODO return bounces from currentPosition, show some particle effects
   return (
     <g key="balls-section">
       {balls.map((b) => {
