@@ -137,7 +137,7 @@ export const createBall = mutation({
     }
     const id = await db.insert("balls", ball);
     const eventualPosition = currentPosition(ball, Infinity, curLevel);
-    ctx.scheduler.runAt(eventualPosition.ts, internal.golf.updateBall, {
+    await ctx.scheduler.runAt(eventualPosition.ts, internal.golf.updateBall, {
       ballId: id,
       lastUpdate: 0,
     });
