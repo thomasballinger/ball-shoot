@@ -57,7 +57,7 @@ function currentLevel({
 }
 
 // The minimum amount of time before a new level can be created
-const ROUND_LENGTH = 20000;
+const ROUND_LENGTH = 2000;
 
 async function ballsForLevel(db: DatabaseReader, levelId: Id<"levels">) {
   const balls = await db
