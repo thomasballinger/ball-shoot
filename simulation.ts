@@ -270,8 +270,14 @@ export function currentPosition(
     }
 
     if (toClosest < radius) {
-      const portionNormalLost = 0.9;
-      const { dx, dy } = bounce(newBall, closestObj!, portionNormalLost);
+      const portionLost = 0.01;
+      const portionNormalLost = 0.05;
+      const { dx, dy } = bounce(
+        newBall,
+        closestObj!,
+        portionLost,
+        portionNormalLost
+      );
       // there's also some total loss
       newBall = { ...prev, dx: dx * 0.95, dy: dy * 0.95 };
     }
@@ -373,13 +379,14 @@ export function pointToLine(
   return Math.sqrt(dx * dx + dy * dy);
 }
 
-/** Bounce off a line or point, losing some momentum in the normal direction. */
+/** Bounce off a line or point, losing some momentum. */
 function bounce(
   { x, y, dx, dy }: { x: number; y: number; dx: number; dy: number },
   lineOrPoint:
     | { x1: number; y1: number; x2: number; y2: number }
     | { x: number; y: number },
-  lossFactor: number = 0.9
+  initialLoss: number = 0.02,
+  additionalNormalLossFactor: number = 0.05
 ) {
   var normal;
   if ("x" in lineOrPoint) {
@@ -393,13 +400,16 @@ function bounce(
     normal = normalize(-yDiff, xDiff);
   }
   // this is the portion normal - we want it all!
-  const dot = dx * normal[0] + dy * normal[1];
+  const dot =
+    dx * (1 - initialLoss) * normal[0] + dy * (1 - initialLoss) * normal[1];
   const reflected = {
-    dx: dx - lossFactor * 2 * dot * normal[0],
-    dy: dy - lossFactor * 2 * dot * normal[1],
+    dx:
+      (1 - initialLoss) * dx -
+      (1 - additionalNormalLossFactor) * 2 * dot * normal[0],
+    dy:
+      (1 - initialLoss) * dy -
+      (1 - additionalNormalLossFactor) * 2 * dot * normal[1],
   };
-
-  // Now project reflected onto the normal and the
 
   return reflected;
 }
