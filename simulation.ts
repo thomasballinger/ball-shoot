@@ -270,8 +270,8 @@ export function currentPosition(
     }
 
     if (toClosest < radius) {
-      const portionLost = 0.01;
-      const portionNormalLost = 0.05;
+      const portionLost = 0.03;
+      const portionNormalLost = 0.08;
       const { dx, dy } = bounce(
         newBall,
         closestObj!,
